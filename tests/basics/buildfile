@@ -1,0 +1,2 @@
+import libs = lyrahgames-robin-hood%lib{lyrahgames-robin-hood}
+exe{main-tests}: {hxx cxx}{**} $libs

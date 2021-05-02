@@ -1,0 +1,6 @@
+$out_root/
+{
+  include lyrahgames/robin_hood/
+}
+
+export $out_root/lyrahgames/robin_hood/$import.target
