@@ -37,7 +37,7 @@
             </a>
         </td> -->
         <td>
-            <a href="https://ci.cppget.org/?builds=robin-hood&pv=&tc=*&cf=&mn=&tg=&rs=*">
+            <a href="https://ci.cppget.org/?builds=lyrahgames-robin-hood&pv=&tc=*&cf=&mn=&tg=&rs=*">
                 <img src="https://img.shields.io/badge/b|2 ci.cppget.org-Click here!-blue">
             </a>
         </td>
