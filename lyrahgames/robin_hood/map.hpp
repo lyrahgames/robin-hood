@@ -9,6 +9,7 @@
 
 namespace lyrahgames::robin_hood {
 
+/// \class map map.hpp lyrahgames/robin_hood/map.hpp
 template <typename key_type,
           typename mapped_type,
           typename hasher = std::hash<key_type>,
@@ -78,4 +79,4 @@ class map {
 
 }  // namespace lyrahgames::robin_hood
 
-#include <lyrahgames/robin_hood/map.tpp>
+#include <lyrahgames/robin_hood/map.ipp>

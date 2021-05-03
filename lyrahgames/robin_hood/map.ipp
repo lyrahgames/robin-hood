@@ -1,3 +1,5 @@
+/// @file
+
 namespace lyrahgames::robin_hood {
 
 #define MEMBER(X)                                                     \
@@ -41,6 +43,11 @@ MEMBER(template <bool constant> struct) basic_iterator {
   size_t index{0};
 };
 
+// template <typename key_type,
+//           typename mapped_type,
+//           typename hasher,
+//           typename equality>
+// struct map<key_type, mapped_type, hasher, equality>::container {
 MEMBER(struct) container {
   // psl_type should be smaller -> uint32_t or even uint16_t
   // psl will not get that long and otherwise

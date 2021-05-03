@@ -4,3 +4,6 @@
 [submodule ".githooks/good-commit-msg"]
 	path = .githooks/good-commit-msg
 	url = https://github.com/lyrahgames/git-good-commit-msg.git
+[submodule "docs/doxygen/doxygen-awesome-css"]
+	path = docs/doxygen/doxygen-awesome-css
+	url = https://github.com/lyrahgames/doxygen-awesome-css.git
