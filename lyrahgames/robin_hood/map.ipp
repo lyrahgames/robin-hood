@@ -182,18 +182,21 @@ void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
 }
 
 TEMPLATE
-void MAP::double_capacity_and_rehash() {
-  container old_table{table.size << size_type{1}};
+void MAP::set_capacity_and_rehash(size_type c) {
+  container old_table{c};
   table.swap(old_table);
 
-  for (size_t i = 0; i < old_table.size; ++i) {
+  for (size_type i = 0; i < old_table.size; ++i) {
     if (!old_table.psl[i]) continue;
-
     const auto [index, psl] = static_insert_data(old_table.keys[i]);
     static_insert(old_table.keys[i], index, psl);
-
     table.values[index] = old_table.values[i];
   }
+}
+
+TEMPLATE
+void MAP::double_capacity_and_rehash() {
+  set_capacity_and_rehash(table.size << 1);
 }
 
 TEMPLATE
@@ -301,6 +304,21 @@ bool MAP::erase(const key_type& key) noexcept {
     index = (index + 1) & mask;
   }
   return false;
+}
+
+TEMPLATE
+void MAP::reserve(size_type size) {
+  if (size <= table.size) return;
+  const auto new_size = ceil_pow2(size);
+  set_capacity_and_rehash(new_size);
+}
+
+TEMPLATE
+void MAP::rehash(size_type count) {
+  count = std::ceil(count / max_load);
+  if (count <= table.size) return;
+  const auto new_size = ceil_pow2(count);
+  set_capacity_and_rehash(new_size);
 }
 
 #undef TEMPLATE

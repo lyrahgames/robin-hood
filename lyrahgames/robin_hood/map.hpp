@@ -1,11 +1,14 @@
 #pragma once
 #include <cassert>
+#include <cmath>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 //
 #include <iomanip>
 #include <iostream>
+//
+#include <lyrahgames/robin_hood/utility.hpp>
 
 namespace lyrahgames::robin_hood {
 
@@ -80,15 +83,32 @@ class map {
 
   bool erase(const key_type& key) noexcept;
 
-  void rehash();
-  void reserve();
+  /// Reserves enough memory in the underlying table by creating a new temporary
+  /// table with the given size ceiled to the next power of two, rehashing all
+  /// elements into it, and swapping its content with the actual table.
+  void reserve(size_type size);
+
+  /// Reserves enough memory in the underlying table such that 'count' elements
+  /// could be inserted without implicitly triggering a rehash with respect to
+  /// the current maximum allowed load factor. @see reserve
+  void rehash(size_type count);
+
   void clear();
+  void shrink_to_fit();
 
  private:
+  /// Returns the ideal table index of a given key
+  /// when no collision would occur.
   auto ideal_index(const key_type& key) const noexcept -> size_type;
 
+  /// Advances the given table index by one possibly starting again at zero when
+  /// runnin over table size boundary.
   auto next(size_type index) const noexcept -> size_type;
 
+  /// If the key is contained in the map then this function returns its index,
+  /// probe sequence length, and 'true'. Otherwise, it would return the index
+  /// where it would have to be inserted with the according probe sequence
+  /// length and 'false'.
   auto lookup_data(const key_type& key) const noexcept
       -> std::tuple<size_type, psl_type, bool>;
 
@@ -111,6 +131,11 @@ class map {
   /// the capacity of the underlying table. The function returns the index
   /// where the element has been inserted.
   auto insert(const key_type& key, size_type index, psl_type psl) -> size_type;
+
+  /// Directly sets the new size of the underlying table and rehashes all
+  /// inserted elements into it. The function assumes that the given size is a
+  /// positive power of two.
+  void set_capacity_and_rehash(size_type size);
 
   /// Doubles the amount of allocated space of the underlying table and inserts
   /// all elements again.
