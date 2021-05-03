@@ -1,0 +1,16 @@
+import! kcov = kcov%exe{kcov}
+# import exe{main-tests}
+include ../../tests/basics/
+main_tests = ../../tests/basics/exe{main-tests}
+
+./: dir{codecov}: $main_tests $kcov
+% update
+{{
+  diag kcov ($<[0])
+  $kcov "--include-path=$src_root/lyrahgames,$out_root/lyrahgames" $out_base/codecov $path($main_tests)
+}}
+% clean
+{{
+  diag rm codecov/
+  rm -rf $out_base/codecov
+}}
