@@ -2,12 +2,17 @@
 
 namespace lyrahgames::robin_hood {
 
-#define MEMBER(X)                                                     \
+// Make implementation of members manageable by providing macros
+// for template parameters and class namespace.
+// Try to mimic the C++ syntax to make parsing possible for other tools.
+#define TEMPLATE                                                      \
   template <typename key_type, typename mapped_type, typename hasher, \
-            typename equality>                                        \
-  X map<key_type, mapped_type, hasher, equality>::
+            typename equality>
+#define MAP map<key_type, mapped_type, hasher, equality>
 
-MEMBER(template <bool constant> struct) basic_iterator {
+TEMPLATE
+template <bool constant>
+struct MAP::basic_iterator {
   using reference =
       std::conditional_t<constant,
                          std::pair<const key_type&, const mapped_type&>,
@@ -22,126 +27,130 @@ MEMBER(template <bool constant> struct) basic_iterator {
     } while ((index < base->size) && !base->psl[index]);
     return *this;
   }
+
   basic_iterator operator++(int) {
     auto ip = *this;
     ++(*this);
     return ip;
   }
+
   reference operator*() const {
     return {base->keys[index], base->values[index]};
   }
+
   bool operator==(basic_iterator it) const noexcept {
     // return (base == it.base) && (index == it.index);
     return index == it.index;
   }
+
   bool operator!=(basic_iterator it) const noexcept {
     // return (index != it.index) || (base != it.base);
     return index != it.index;
   }
 
+  // State
   container_pointer base{nullptr};
   size_t index{0};
 };
 
-// template <typename key_type,
-//           typename mapped_type,
-//           typename hasher,
-//           typename equality>
-// struct map<key_type, mapped_type, hasher, equality>::container {
-MEMBER(struct) container {
-  // psl_type should be smaller -> uint32_t or even uint16_t
-  // psl will not get that long and otherwise
-  // it is a bad hash implementation
-  using psl_type = size_t;
-
+TEMPLATE
+struct MAP::container {
   container() = default;
   container(size_t s)
       : keys{make_unique<key_type[]>(s)},
         values{make_unique<mapped_type[]>(s)},
         psl{new psl_type[s]{0}},
         size{s} {}
-
-  container(const container&) = delete;
-  container& operator=(const container&) = delete;
-
-  container(container &&) = default;
-  container& operator=(container&&) = default;
-
   virtual ~container() noexcept = default;
 
-  void swap(container & c) noexcept {
+  // No copy is allowed.
+  container(const container&) = delete;
+  container& operator=(const container&) = delete;
+  // Move is possible due to unique_ptr implementation.
+  container(container&&) = default;
+  container& operator=(container&&) = default;
+
+  // A container should provide a custom swap implementation.
+  void swap(container& c) noexcept {
     std::swap(keys, c.keys);
     std::swap(values, c.values);
     std::swap(psl, c.psl);
     std::swap(size, c.size);
   }
 
+  // State
   std::unique_ptr<key_type[]> keys{};
   std::unique_ptr<mapped_type[]> values{};
   std::unique_ptr<psl_type[]> psl{};
   size_type size{};
 };
 
-MEMBER(inline auto) begin() noexcept -> iterator {
+TEMPLATE
+inline auto MAP::begin() noexcept -> iterator {
   for (size_t i = 0; i < table.size; ++i)
     if (table.psl[i]) return {&table, i};
   return {&table, table.size};
 }
 
-MEMBER(inline auto) begin() const noexcept -> const_iterator {
+TEMPLATE
+inline auto MAP::begin() const noexcept -> const_iterator {
   for (size_t i = 0; i < table.size; ++i)
     if (table.psl[i]) return {&table, i};
   return {&table, table.size};
 }
 
-MEMBER(inline auto) end() noexcept -> iterator {
+TEMPLATE
+inline auto MAP::end() noexcept -> iterator {
   return {&table, table.size};
 }
 
-MEMBER(inline auto) end() const noexcept -> const_iterator {
+TEMPLATE
+inline auto MAP::end() const noexcept -> const_iterator {
   return {&table, table.size};
 }
 
-MEMBER(auto) find(const key_type& key) noexcept -> iterator {
-  const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
-  size_t psl = 1;
-  for (; psl <= table.psl[index]; ++psl) {
-    if (equal(table.keys[index], key)) return {&table, index};
-    index = (index + 1) & mask;
-  }
-  return end();
-}
-
-MEMBER(auto) find(const key_type& key) const noexcept -> const_iterator {
-  const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
-  size_t psl = 1;
-  for (; psl <= table.psl[index]; ++psl) {
-    if (equal(table.keys[index], key)) return {&table, index};
-    index = (index + 1) & mask;
-  }
-  return end();
-}
-
-MEMBER(void) set_max_load_factor(real x) {
-  assert((x <= 0) || (x >= 1));
+TEMPLATE
+void MAP::set_max_load_factor(real x) {
+  assert((x > 0) || (x < 1));
   max_load = x;
 }
 
-MEMBER(auto)
-new_key_swap_index(
-    const key_type& key) const noexcept->std::pair<size_t, size_t> {
+TEMPLATE
+inline auto MAP::ideal_index(const key_type& key) const noexcept -> size_type {
   const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
+  return hash(key) & mask;
+}
+
+TEMPLATE
+inline auto MAP::next(size_type index) const noexcept -> size_type {
+  const auto mask = table.size - size_type{1};
+  return (index + size_type{1}) & mask;
+}
+
+TEMPLATE
+inline auto MAP::lookup_data(const key_type& key) const noexcept
+    -> std::tuple<size_type, psl_type, bool> {
+  auto index = ideal_index(key);
   size_t psl = 1;
   for (; psl <= table.psl[index]; ++psl) {
-    index = (index + 1) & mask;
+    if (equal(table.keys[index], key)) return {index, psl, true};
+    index = next(index);
   }
+  return {index, psl, false};
+}
+
+TEMPLATE
+inline auto MAP::static_insert_data(const key_type& key) const noexcept
+    -> std::pair<size_type, psl_type> {
+  auto index = ideal_index(key);
+  size_t psl = 1;
+  for (; psl <= table.psl[index]; ++psl)
+    index = next(index);
   return {index, psl};
 }
 
-MEMBER(void) insert_key_by_swap(const key_type& key, size_t index, size_t psl) {
+TEMPLATE
+void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
   if (!table.psl[index]) {
     table.keys[index] = key;
     // table.values[index] = std::move(tmp_value);
@@ -172,58 +181,100 @@ MEMBER(void) insert_key_by_swap(const key_type& key, size_t index, size_t psl) {
   table.psl[index] = psl;
 }
 
-MEMBER(void) double_capacity_and_rehash() {
+TEMPLATE
+void MAP::double_capacity_and_rehash() {
   container old_table{table.size << size_type{1}};
   table.swap(old_table);
+
   for (size_t i = 0; i < old_table.size; ++i) {
     if (!old_table.psl[i]) continue;
-    const auto [index, psl] = new_key_swap_index(old_table.keys[i]);
-    insert_key_by_swap(old_table.keys[i], index, psl);
+
+    const auto [index, psl] = static_insert_data(old_table.keys[i]);
+    static_insert(old_table.keys[i], index, psl);
+
     table.values[index] = old_table.values[i];
   }
 }
 
-MEMBER(auto) operator[](const key_type& key) -> mapped_type& {
-  // Try to find the element.
-  const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
-  size_t psl = 1;
-  for (; psl <= table.psl[index]; ++psl) {
-    if (equal(table.keys[index], key)) return table.values[index];
-    index = (index + 1) & mask;
-  }
-
-  // Could not find the element. So insert it by Robin-Hood swapping.
+TEMPLATE
+auto MAP::insert(const key_type& key, size_type index, psl_type psl)
+    -> size_type {
   ++load;
-  if (load >= max_load * table.size) {
+  if (overloaded()) {
     double_capacity_and_rehash();
-    const auto [tmp_index, tmp_psl] = new_key_swap_index(key);
-    index = tmp_index;
-    psl = tmp_psl;
+    const auto [i, p] = static_insert_data(key);
+    index = i;
+    psl = p;
   }
+  static_insert(key, index, psl);
+  return index;
+}
 
-  insert_key_by_swap(key, index, psl);
+TEMPLATE
+bool MAP::insert(const key_type& key, const mapped_type& value) {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) return false;
+  index = insert(key, index, psl);
+  table.values[index] = value;
+  return true;
+}
+
+TEMPLATE
+bool MAP::insert_or_assign(const key_type& key, const mapped_type& value) {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) {
+    table.values[index] = value;
+    return false;
+  }
+  index = insert(key, index, psl);
+  table.values[index] = value;
+  return true;
+}
+
+TEMPLATE
+bool MAP::assign(const key_type& key, const mapped_type& value) {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) table.values[index] = value;
+  return found;
+}
+
+TEMPLATE
+auto MAP::operator[](const key_type& key) -> mapped_type& {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) return table.values[index];
+  index = insert(key, index, psl);
   return table.values[index];
 }
 
-MEMBER(auto) operator()(const key_type& key) -> mapped_type& {
-  // Try to find the element.
-  const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
-  size_t psl = 1;
-  for (; psl <= table.psl[index]; ++psl) {
-    if (equal_to(table.keys[index], key)) return table.values[index];
-    index = (index + 1) & mask;
-  }
-  // Could not find the element.
-  throw std::out_of_range("Given element could not be found in hash_map.");
+TEMPLATE
+auto MAP::operator()(const key_type& key) -> mapped_type& {
+  const auto [index, psl, found] = lookup_data(key);
+  if (found) return table.values[index];
+  throw std::invalid_argument("Failed to find the given key.");
 }
 
-MEMBER(auto) operator()(const key_type& key) const -> const mapped_type& {
+TEMPLATE
+auto MAP::operator()(const key_type& key) const -> const mapped_type& {
   return const_cast<map&>(*this).operator()(key);
 }
 
-MEMBER(void) erase_by_swap(size_t index) {
+TEMPLATE
+auto MAP::lookup_iterator(const key_type& key) noexcept -> iterator {
+  const auto [index, psl, found] = lookup_data(key);
+  if (found) return {&table, index};
+  return end();
+}
+
+TEMPLATE
+auto MAP::lookup_iterator(const key_type& key) const noexcept
+    -> const_iterator {
+  const auto [index, psl, found] = lookup_data(key);
+  if (found) return {&table, index};
+  return end();
+}
+
+TEMPLATE
+void MAP::erase_by_swap(size_t index) {
   const auto mask = table.size - size_type{1};
   size_t next_index = (index + 1) & mask;
   while (table.psl[next_index] > 1) {
@@ -234,10 +285,10 @@ MEMBER(void) erase_by_swap(size_t index) {
     next_index = (next_index + 1) & mask;
   }
   table.psl[index] = 0;
-  // destroy key and value
 }
 
-MEMBER(bool) erase(const key_type& key) noexcept {
+TEMPLATE
+bool MAP::erase(const key_type& key) noexcept {
   const auto mask = table.size - size_type{1};
   size_t index = hash(key) & mask;
   size_t psl = 1;
@@ -252,6 +303,7 @@ MEMBER(bool) erase(const key_type& key) noexcept {
   return false;
 }
 
-#undef MEMBER
+#undef TEMPLATE
+#undef MAP
 
 }  // namespace lyrahgames::robin_hood

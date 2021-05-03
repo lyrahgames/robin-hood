@@ -10,6 +10,18 @@
 using namespace std;
 using namespace lyrahgames;
 
+TEST_CASE("") {
+  robin_hood::map<int, int> map{};
+  using real = decltype(map)::real;
+
+  CHECK(map.empty());
+  CHECK(map.size() == 0);
+
+  map.set_max_load_factor(real(0.5));
+
+  CHECK(map.max_load_factor() == real(0.5));
+}
+
 TEST_CASE("Default map construction.") {
   robin_hood::map<string, int> map{};
 
