@@ -3,7 +3,7 @@ name: lyrahgames-robin-hood
 version: 0.1.0-a.0.z
 project: lyrahgames
 summary: robin-hood C++ library
-license: other: proprietary ; Not free/open source.
+license: GPL-3.0-or-later ; GNU General Public License v3.0 or later
 
 description-file: README.md
 url: https://github.com/lyrahgames/robin-hood
