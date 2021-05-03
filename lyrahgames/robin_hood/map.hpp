@@ -81,7 +81,12 @@ class map {
   auto operator()(const key_type& key) -> mapped_type&;
   auto operator()(const key_type& key) const -> const mapped_type&;
 
-  bool erase(const key_type& key) noexcept;
+  /// Checks if the given key has been inserted into the map.
+  bool contains(const key_type& key) const noexcept;
+
+  /// If the given key has been inserted, remove the element with the given key
+  /// and return 'true'. Otherwise, do nothing and return 'false'.
+  bool erase(const key_type& key);
 
   /// Reserves enough memory in the underlying table by creating a new temporary
   /// table with the given size ceiled to the next power of two, rehashing all
@@ -141,13 +146,22 @@ class map {
   /// all elements again.
   void double_capacity_and_rehash();
 
-  void erase_by_swap(size_t index);
+  /// Erase the element at the given table index and move the subsequent
+  /// elements one step back. Abort this when an element with probe sequence
+  /// length of '1' occurs.
+  void erase_and_move(size_type index);
 
+ private:
   // State
+  /// Underlying table storing all elements.
   container table{8};
+  /// Functor used to compute the hash of keys.
   hasher hash{};
+  /// Functor used to check equality of keys.
   equality equal{};
+  /// Count of elements inserted into the map.
   size_type load{};
+  /// Maximum allowed load factor
   // open_normalized<real>
   real max_load{0.8};
   // We need stats:

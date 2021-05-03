@@ -277,33 +277,32 @@ auto MAP::lookup_iterator(const key_type& key) const noexcept
 }
 
 TEMPLATE
-void MAP::erase_by_swap(size_t index) {
-  const auto mask = table.size - size_type{1};
-  size_t next_index = (index + 1) & mask;
+inline bool MAP::contains(const key_type& key) const noexcept {
+  const auto [index, psl, found] = lookup_data(key);
+  return found;
+}
+
+TEMPLATE
+void MAP::erase_and_move(size_type index) {
+  auto next_index = next(index);
   while (table.psl[next_index] > 1) {
     table.keys[index] = std::move(table.keys[next_index]);
     table.values[index] = std::move(table.values[next_index]);
     table.psl[index] = table.psl[next_index] - 1;
+
     index = next_index;
-    next_index = (next_index + 1) & mask;
+    next_index = next(next_index);
   }
   table.psl[index] = 0;
 }
 
 TEMPLATE
-bool MAP::erase(const key_type& key) noexcept {
-  const auto mask = table.size - size_type{1};
-  size_t index = hash(key) & mask;
-  size_t psl = 1;
-  for (; psl <= table.psl[index]; ++psl) {
-    if (equal(table.keys[index], key)) {
-      erase_by_swap(index);
-      --load;
-      return true;
-    }
-    index = (index + 1) & mask;
-  }
-  return false;
+bool MAP::erase(const key_type& key) {
+  const auto [index, psl, found] = lookup_data(key);
+  if (!found) return false;
+  erase_and_move(index);
+  --load;
+  return true;
 }
 
 TEMPLATE
