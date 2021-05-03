@@ -78,8 +78,17 @@ class map {
   bool insert_or_assign(const key_type& key, const mapped_type& value);
   bool assign(const key_type& key, const mapped_type& value);
 
+  /// Returns a reference to the mapped value of the given key. If no such
+  /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) -> mapped_type&;
+  /// Returns a reference to the mapped value of the given key. If no such
+  /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) const -> const mapped_type&;
+
+  template <typename pair_iterator>
+  void insert(pair_iterator first, pair_iterator last);
+  template <typename key_iterator, typename value_iterator>
+  void insert(key_iterator first, key_iterator last, value_iterator v);
 
   /// Checks if the given key has been inserted into the map.
   bool contains(const key_type& key) const noexcept;
@@ -99,6 +108,7 @@ class map {
   void rehash(size_type count);
 
   void clear();
+
   void shrink_to_fit();
 
  private:

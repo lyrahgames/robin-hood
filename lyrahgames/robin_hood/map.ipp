@@ -320,6 +320,30 @@ void MAP::rehash(size_type count) {
   set_capacity_and_rehash(new_size);
 }
 
+TEMPLATE
+void MAP::clear() {
+  for (size_type i = 0; i < table.size; ++i) {
+    table.psl[i] = 0;
+    // Keys and values have to be destroyed.
+  }
+}
+
+TEMPLATE
+template <typename pair_iterator>
+void MAP::insert(pair_iterator first, pair_iterator last) {
+  for (auto it = first; it != last; ++it) {
+    const auto& [key, value] = *it;
+    operator[](key) = value;
+  }
+}
+
+TEMPLATE
+template <typename key_iterator, typename value_iterator>
+void MAP::insert(key_iterator first, key_iterator last, value_iterator v) {
+  for (auto it = first; it != last; ++it, ++v)
+    operator[](*it) = *v;
+}
+
 #undef TEMPLATE
 #undef MAP
 
