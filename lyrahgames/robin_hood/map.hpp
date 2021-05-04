@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <functional>
@@ -16,7 +17,8 @@ namespace lyrahgames::robin_hood {
 template <typename key_type,
           typename mapped_type,
           typename hasher = std::hash<key_type>,
-          typename equality = std::equal_to<key_type>>
+          typename equality = std::equal_to<key_type>,
+          typename allocator = std::allocator<key_type>>
 class map {
   template <bool constant>
   struct basic_iterator;
@@ -32,11 +34,32 @@ class map {
   using iterator = basic_iterator<false>;
   using const_iterator = basic_iterator<true>;
 
+  using basic_key_allocator =
+      typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
+  using key_allocator = std::allocator_traits<basic_key_allocator>;
+  static basic_key_allocator key_alloc;
+
+  using basic_value_allocator =
+      typename std::allocator_traits<allocator>::rebind_alloc<mapped_type>;
+  using value_allocator = std::allocator_traits<basic_value_allocator>;
+  static basic_value_allocator value_alloc;
+
+  using basic_psl_allocator =
+      typename std::allocator_traits<allocator>::rebind_alloc<psl_type>;
+  using psl_allocator = std::allocator_traits<basic_psl_allocator>;
+  static basic_psl_allocator psl_alloc;
+
   friend std::ostream& operator<<(std::ostream& os, const map& m) {
     using namespace std;
-    for (size_t i = 0; i < m.table.size; ++i)
+    for (size_t i = 0; i < m.table.size; ++i) {
+      os << setw(15) << i;
+      if (!m.table.psl[i]) {
+        os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
+        continue;
+      }
       os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
          << setw(15) << m.table.psl[i] << '\n';
+    }
     return os;
   }
 
