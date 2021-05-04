@@ -1,3 +1,4 @@
+#include <atomic>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -331,4 +332,118 @@ TEST_CASE("Default map construction.") {
 
   for (auto [key, value] : map)
     cout << setw(15) << key << setw(15) << value << '\n';
+}
+
+struct test_value {
+  test_value() { ++default_constructor_calls; }
+  test_value(int d) : data{d} { ++constructor_calls; }
+  virtual ~test_value() noexcept { ++destructor_calls; }
+
+  test_value(const test_value& v) : data{v.data} { ++copy_constructor_calls; }
+  test_value& operator=(const test_value& v) {
+    data = v.data;
+    ++copy_assignment_calls;
+    return *this;
+  }
+
+  test_value(test_value&& v) : data{v.data} { ++move_constructor_calls; }
+  test_value& operator=(test_value&& v) {
+    data = v.data;
+    ++move_assignment_calls;
+    return *this;
+  }
+
+  operator int() { return data; }
+
+  static atomic<size_t> default_constructor_calls;
+  static atomic<size_t> constructor_calls;
+  static atomic<size_t> destructor_calls;
+  static atomic<size_t> copy_constructor_calls;
+  static atomic<size_t> copy_assignment_calls;
+  static atomic<size_t> move_constructor_calls;
+  static atomic<size_t> move_assignment_calls;
+
+  static void reset_stats() {
+    default_constructor_calls = 0;
+    constructor_calls = 0;
+    destructor_calls = 0;
+    copy_constructor_calls = 0;
+    copy_assignment_calls = 0;
+    move_constructor_calls = 0;
+    move_assignment_calls = 0;
+  }
+
+  static void print_stats() {
+    cout << setw(30) << "default constructor calls = " << setw(7)
+         << default_constructor_calls << '\n'
+         << setw(30) << "constructor calls = " << setw(7) << constructor_calls
+         << '\n'
+         << setw(30) << "destructor calls = " << setw(7) << destructor_calls
+         << '\n'
+         << setw(30) << "copy constructor calls = " << setw(7)
+         << copy_constructor_calls << '\n'
+         << setw(30) << "copy assignment calls = " << setw(7)
+         << copy_assignment_calls << '\n'
+         << setw(30) << "move constructor calls = " << setw(7)
+         << move_constructor_calls << '\n'
+         << setw(30) << "move assignment calls = " << setw(7)
+         << move_assignment_calls << '\n';
+  }
+
+  int data{};
+};
+
+atomic<size_t> test_value::default_constructor_calls = 0;
+atomic<size_t> test_value::constructor_calls = 0;
+atomic<size_t> test_value::destructor_calls = 0;
+atomic<size_t> test_value::copy_constructor_calls = 0;
+atomic<size_t> test_value::copy_assignment_calls = 0;
+atomic<size_t> test_value::move_constructor_calls = 0;
+atomic<size_t> test_value::move_assignment_calls = 0;
+
+namespace std {
+template <>
+struct hash<test_value> {
+  size_t operator()(test_value v) const noexcept { return hash<int>{}(v.data); }
+};
+}  // namespace std
+
+inline bool operator==(test_value x, test_value y) noexcept {
+  return x.data == y.data;
+}
+
+SCENARIO("") {
+  {
+    robin_hood::map<test_value, int> map{};
+    test_value::print_stats();
+    map[1] = 1;
+    map[4] = 2;
+    map[5] = 3;
+    map[2] = 4;
+    map[9] = 5;
+    map[17] = 6;
+    map[3] = 7;
+    cout << map << '\n';
+    test_value::print_stats();
+  }
+  test_value::print_stats();
+  test_value::reset_stats();
+}
+
+SCENARIO("") {
+  {
+    robin_hood::map<int, test_value> map{};
+    test_value::print_stats();
+    map[1] = 1;
+    map[4] = 2;
+    map[5] = 3;
+    map[2] = 4;
+    map[9] = 5;
+    map[17] = 6;
+    map[3] = 7;
+    cout << map << '\n';
+    test_value::print_stats();
+  }
+  test_value::print_stats();
+  test_value::reset_stats();
 }
