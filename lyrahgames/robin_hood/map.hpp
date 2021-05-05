@@ -11,6 +11,8 @@
 #include <iostream>
 //
 #include <lyrahgames/robin_hood/utility.hpp>
+//
+#include <lyrahgames/robin_hood/detail/table.hpp>
 
 namespace lyrahgames::robin_hood {
 
@@ -21,34 +23,32 @@ template <typename key_type,
           typename equality  = std::equal_to<key_type>,
           typename allocator = std::allocator<key_type>>
 class map {
-  template <bool constant>
-  struct basic_iterator;
-  struct container;
+  // template <bool constant>
+  // struct basic_iterator;
+  // struct container;
+  using container = detail::table<key_type, mapped_type, allocator>;
 
  public:
-  using real      = float;
-  using size_type = size_t;
-  // psl_type should be smaller -> uint32_t or even uint16_t
-  // psl will not get that long and otherwise
-  // it is a bad hash implementation
-  using psl_type       = size_t;
-  using iterator       = basic_iterator<false>;
-  using const_iterator = basic_iterator<true>;
+  using real           = float;
+  using size_type      = container::size_type;
+  using psl_type       = container::psl_type;
+  using iterator       = container::iterator;
+  using const_iterator = container::const_iterator;
 
-  using basic_key_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
-  using key_allocator = std::allocator_traits<basic_key_allocator>;
-  static basic_key_allocator key_alloc;
+  // using basic_key_allocator =
+  //     typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
+  // using key_allocator = std::allocator_traits<basic_key_allocator>;
+  // static basic_key_allocator key_alloc;
 
-  using basic_value_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<mapped_type>;
-  using value_allocator = std::allocator_traits<basic_value_allocator>;
-  static basic_value_allocator value_alloc;
+  // using basic_value_allocator =
+  //     typename std::allocator_traits<allocator>::rebind_alloc<mapped_type>;
+  // using value_allocator = std::allocator_traits<basic_value_allocator>;
+  // static basic_value_allocator value_alloc;
 
-  using basic_psl_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<psl_type>;
-  using psl_allocator = std::allocator_traits<basic_psl_allocator>;
-  static basic_psl_allocator psl_alloc;
+  // using basic_psl_allocator =
+  //     typename std::allocator_traits<allocator>::rebind_alloc<psl_type>;
+  // using psl_allocator = std::allocator_traits<basic_psl_allocator>;
+  // static basic_psl_allocator psl_alloc;
 
   map() = default;
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);
@@ -77,10 +77,10 @@ class map {
   // real -> open_normalized<real>
   void set_max_load_factor(real x);
 
-  auto begin() noexcept -> iterator;
-  auto begin() const noexcept -> const_iterator;
-  auto end() noexcept -> iterator;
-  auto end() const noexcept -> const_iterator;
+  auto begin() noexcept -> iterator { return table.begin(); }
+  auto begin() const noexcept -> const_iterator { return table.begin(); }
+  auto end() noexcept -> iterator { return table.end(); }
+  auto end() const noexcept -> const_iterator { return table.end(); }
 
   auto lookup_iterator(const key_type& key) noexcept -> iterator;
   auto lookup_iterator(const key_type& key) const noexcept -> const_iterator;
@@ -129,7 +129,7 @@ class map {
   /// Output the inner state of the map by using the given output stream.
   /// This function should only be used for debugging.
   template <typename K, typename M, typename H, typename E, typename A>
-  friend std::ostream& operator<<(std::ostream& os,
+  friend std::ostream& operator<<(std::ostream&             os,
                                   const map<K, M, H, E, A>& m);
 
  private:

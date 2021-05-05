@@ -10,135 +10,135 @@ namespace lyrahgames::robin_hood {
             typename equality, typename allocator>
 #define MAP map<key_type, mapped_type, hasher, equality, allocator>
 
-TEMPLATE
-MAP::basic_key_allocator MAP::key_alloc{};
-TEMPLATE
-MAP::basic_value_allocator MAP::value_alloc{};
-TEMPLATE
-MAP::basic_psl_allocator MAP::psl_alloc{};
+// TEMPLATE
+// MAP::basic_key_allocator MAP::key_alloc{};
+// TEMPLATE
+// MAP::basic_value_allocator MAP::value_alloc{};
+// TEMPLATE
+// MAP::basic_psl_allocator MAP::psl_alloc{};
 
-TEMPLATE
-template <bool constant>
-struct MAP::basic_iterator {
-  using reference =
-      std::conditional_t<constant,
-                         std::pair<const key_type&, const mapped_type&>,
-                         std::pair<const key_type&, mapped_type&>>;
+// TEMPLATE
+// template <bool constant>
+// struct MAP::basic_iterator {
+//   using reference =
+//       std::conditional_t<constant,
+//                          std::pair<const key_type&, const mapped_type&>,
+//                          std::pair<const key_type&, mapped_type&>>;
 
-  using container_pointer =
-      std::conditional_t<constant, const container*, container*>;
+//   using container_pointer =
+//       std::conditional_t<constant, const container*, container*>;
 
-  basic_iterator& operator++() {
-    do {
-      ++index;
-    } while ((index < base->size) && !base->psl[index]);
-    return *this;
-  }
+//   basic_iterator& operator++() {
+//     do {
+//       ++index;
+//     } while ((index < base->size) && !base->psl[index]);
+//     return *this;
+//   }
 
-  basic_iterator operator++(int) {
-    auto ip = *this;
-    ++(*this);
-    return ip;
-  }
+//   basic_iterator operator++(int) {
+//     auto ip = *this;
+//     ++(*this);
+//     return ip;
+//   }
 
-  reference operator*() const {
-    return {base->keys[index], base->values[index]};
-  }
+//   reference operator*() const {
+//     return {base->keys[index], base->values[index]};
+//   }
 
-  bool operator==(basic_iterator it) const noexcept {
-    // return (base == it.base) && (index == it.index);
-    return index == it.index;
-  }
+//   bool operator==(basic_iterator it) const noexcept {
+//     // return (base == it.base) && (index == it.index);
+//     return index == it.index;
+//   }
 
-  bool operator!=(basic_iterator it) const noexcept {
-    // return (index != it.index) || (base != it.base);
-    return index != it.index;
-  }
+//   bool operator!=(basic_iterator it) const noexcept {
+//     // return (index != it.index) || (base != it.base);
+//     return index != it.index;
+//   }
 
-  // State
-  container_pointer base{nullptr};
-  size_t index{0};
-};
+//   // State
+//   container_pointer base{nullptr};
+//   size_t index{0};
+// };
 
-TEMPLATE
-struct MAP::container {
-  container() = default;
-  container(size_t s)
-      : keys{key_allocator::allocate(key_alloc, s)},
-        values{value_allocator::allocate(value_alloc, s)},
-        psl{psl_allocator::allocate(psl_alloc, s)},
-        size{s} {
-    std::fill(psl, psl + size, 0);
-    // std::cout << "Container created with size " << size << std::endl;
-  }
-  virtual ~container() noexcept {
-    if (!psl) return;
+// TEMPLATE
+// struct MAP::container {
+//   container() = default;
+//   container(size_t s)
+//       : keys{key_allocator::allocate(key_alloc, s)},
+//         values{value_allocator::allocate(value_alloc, s)},
+//         psl{psl_allocator::allocate(psl_alloc, s)},
+//         size{s} {
+//     std::fill(psl, psl + size, 0);
+//     // std::cout << "Container created with size " << size << std::endl;
+//   }
+//   virtual ~container() noexcept {
+//     if (!psl) return;
 
-    // Destroy all inserted elements.
-    size_type destructions = 0;
-    for (size_type i = 0; i < size; ++i) {
-      if (!psl[i]) continue;
-      key_allocator::destroy(key_alloc, keys + i);
-      value_allocator::destroy(value_alloc, values + i);
-      ++destructions;
-    }
+//     // Destroy all inserted elements.
+//     size_type destructions = 0;
+//     for (size_type i = 0; i < size; ++i) {
+//       if (!psl[i]) continue;
+//       key_allocator::destroy(key_alloc, keys + i);
+//       value_allocator::destroy(value_alloc, values + i);
+//       ++destructions;
+//     }
 
-    // Deallocate memory.
-    psl_allocator::deallocate(psl_alloc, psl, size);
-    value_allocator::deallocate(value_alloc, values, size);
-    key_allocator::deallocate(key_alloc, keys, size);
-    // std::cout << "Container destroyed with size " << size << " and "
-    //           << destructions << " destructions." << std::endl;
-  }
+//     // Deallocate memory.
+//     psl_allocator::deallocate(psl_alloc, psl, size);
+//     value_allocator::deallocate(value_alloc, values, size);
+//     key_allocator::deallocate(key_alloc, keys, size);
+//     // std::cout << "Container destroyed with size " << size << " and "
+//     //           << destructions << " destructions." << std::endl;
+//   }
 
-  // No copy is allowed.
-  container(const container&) = delete;
-  container& operator=(const container&) = delete;
-  // Move is possible due to unique_ptr implementation.
-  container(container&&) = delete;
-  container& operator=(container&&) = delete;
+//   // No copy is allowed.
+//   container(const container&) = delete;
+//   container& operator=(const container&) = delete;
+//   // Move is possible due to unique_ptr implementation.
+//   container(container&&) = delete;
+//   container& operator=(container&&) = delete;
 
-  // A container should provide a custom swap implementation.
-  void swap(container& c) noexcept {
-    std::swap(keys, c.keys);
-    std::swap(values, c.values);
-    std::swap(psl, c.psl);
-    std::swap(size, c.size);
-  }
+//   // A container should provide a custom swap implementation.
+//   void swap(container& c) noexcept {
+//     std::swap(keys, c.keys);
+//     std::swap(values, c.values);
+//     std::swap(psl, c.psl);
+//     std::swap(size, c.size);
+//   }
 
-  // State
-  // std::unique_ptr<key_type[]> keys{};
-  // std::unique_ptr<mapped_type[]> values{};
-  // std::unique_ptr<psl_type[]> psl{};
-  key_type* keys{};
-  mapped_type* values{};
-  psl_type* psl{};
-  size_type size{};
-};
+//   // State
+//   // std::unique_ptr<key_type[]> keys{};
+//   // std::unique_ptr<mapped_type[]> values{};
+//   // std::unique_ptr<psl_type[]> psl{};
+//   key_type* keys{};
+//   mapped_type* values{};
+//   psl_type* psl{};
+//   size_type size{};
+// };
 
-TEMPLATE
-inline auto MAP::begin() noexcept -> iterator {
-  for (size_t i = 0; i < table.size; ++i)
-    if (table.psl[i]) return {&table, i};
-  return {&table, table.size};
-}
+// TEMPLATE
+// inline auto MAP::begin() noexcept -> iterator {
+//   for (size_t i = 0; i < table.size; ++i)
+//     if (table.psl[i]) return {&table, i};
+//   return {&table, table.size};
+// }
 
-TEMPLATE
-inline auto MAP::begin() const noexcept -> const_iterator {
-  for (size_t i = 0; i < table.size; ++i)
-    if (table.psl[i]) return {&table, i};
-  return {&table, table.size};
-}
+// TEMPLATE
+// inline auto MAP::begin() const noexcept -> const_iterator {
+//   for (size_t i = 0; i < table.size; ++i)
+//     if (table.psl[i]) return {&table, i};
+//   return {&table, table.size};
+// }
 
-TEMPLATE
-inline auto MAP::end() noexcept -> iterator {
-  return {&table, table.size};
-}
+// TEMPLATE
+// inline auto MAP::end() noexcept -> iterator {
+//   return {&table, table.size};
+// }
 
-TEMPLATE
-inline auto MAP::end() const noexcept -> const_iterator {
-  return {&table, table.size};
-}
+// TEMPLATE
+// inline auto MAP::end() const noexcept -> const_iterator {
+//   return {&table, table.size};
+// }
 
 TEMPLATE
 void MAP::set_max_load_factor(real x) {
@@ -161,8 +161,8 @@ inline auto MAP::next(size_type index) const noexcept -> size_type {
 TEMPLATE
 inline auto MAP::lookup_data(const key_type& key) const noexcept
     -> std::tuple<size_type, psl_type, bool> {
-  auto index = ideal_index(key);
-  size_t psl = 1;
+  auto   index = ideal_index(key);
+  size_t psl   = 1;
   for (; psl <= table.psl[index]; ++psl) {
     if (equal(table.keys[index], key)) return {index, psl, true};
     index = next(index);
@@ -173,8 +173,8 @@ inline auto MAP::lookup_data(const key_type& key) const noexcept
 TEMPLATE
 inline auto MAP::static_insert_data(const key_type& key) const noexcept
     -> std::pair<size_type, psl_type> {
-  auto index = ideal_index(key);
-  size_t psl = 1;
+  auto   index = ideal_index(key);
+  size_t psl   = 1;
   for (; psl <= table.psl[index]; ++psl)
     index = next(index);
   return {index, psl};
@@ -186,11 +186,12 @@ void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
     // table.keys[index] = key;
     // table.values[index] = std::move(tmp_value);
     table.psl[index] = psl;
-    key_allocator::construct(key_alloc, table.keys + index, key);
+    // key_allocator::construct(key_alloc, table.keys + index, key);
+    table.construct_key(index, key);
     return;
   }
 
-  key_type tmp_key      = std::move(table.keys[index]);
+  key_type    tmp_key   = std::move(table.keys[index]);
   mapped_type tmp_value = std::move(table.values[index]);
   table.keys[index]     = key;
   // table.values[index] = mapped_type{};
@@ -209,9 +210,12 @@ void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
 
   // table.keys[index] = std::move(tmp_key);
   // table.values[index] = std::move(tmp_value);
-  key_allocator::construct(key_alloc, table.keys + index, std::move(tmp_key));
-  value_allocator::construct(value_alloc, table.values + index,
-                             std::move(tmp_value));
+  // key_allocator::construct(key_alloc, table.keys + index,
+  // std::move(tmp_key)); value_allocator::construct(value_alloc, table.values +
+  // index,
+  //                            std::move(tmp_value));
+  table.construct_key(index, std::move(tmp_key));
+  table.construct_value(index, std::move(tmp_value));
   table.psl[index] = psl;
 }
 
@@ -226,8 +230,9 @@ void MAP::set_capacity_and_rehash(size_type c) {
     static_insert(old_table.keys[i], index, psl);
     // static_insert(std::move(old_table.keys[i]), index, psl);
     // table.values[index] = std::move(old_table.values[i]);
-    value_allocator::construct(value_alloc, table.values + index,
-                               std::move(old_table.values[i]));
+    // value_allocator::construct(value_alloc, table.values + index,
+    //                            std::move(old_table.values[i]));
+    table.construct_value(index, std::move(old_table.values[i]));
   }
 }
 
@@ -256,7 +261,8 @@ bool MAP::insert(const key_type& key, const mapped_type& value) {
   if (found) return false;
   index = insert(key, index, psl);
   // table.values[index] = value;
-  value_allocator::construct(value_alloc, table.values + index, value);
+  // value_allocator::construct(value_alloc, table.values + index, value);
+  table.construct_value(index, value);
   return true;
 }
 
@@ -269,7 +275,8 @@ bool MAP::insert_or_assign(const key_type& key, const mapped_type& value) {
   }
   index = insert(key, index, psl);
   // table.values[index] = value;
-  value_allocator::construct(value_alloc, table.values + index, value);
+  // value_allocator::construct(value_alloc, table.values + index, value);
+  table.construct_value(index, value);
   return true;
 }
 
@@ -285,7 +292,8 @@ auto MAP::operator[](const key_type& key) -> mapped_type& {
   auto [index, psl, found] = lookup_data(key);
   if (found) return table.values[index];
   index = insert(key, index, psl);
-  value_allocator::construct(value_alloc, table.values + index);
+  // value_allocator::construct(value_alloc, table.values + index);
+  table.construct_value(index);
   return table.values[index];
 }
 
@@ -333,9 +341,12 @@ void MAP::erase_and_move(size_type index) {
     index      = next_index;
     next_index = next(next_index);
   }
-  key_allocator::destroy(key_alloc, table.keys + index);
-  value_allocator::destroy(value_alloc, table.values + index);
-  table.psl[index] = 0;
+  // key_allocator::destroy(key_alloc, table.keys + index);
+  // value_allocator::destroy(value_alloc, table.values + index);
+  // table.destroy_key(index);
+  // table.destroy_value(index);
+  // table.psl[index] = 0;
+  table.destroy(index);
 }
 
 TEMPLATE
@@ -366,9 +377,12 @@ TEMPLATE
 void MAP::clear() {
   for (size_type i = 0; i < table.size; ++i) {
     if (!table.psl[i]) continue;
-    key_allocator::destroy(key_alloc, table.keys + i);
-    value_allocator::destroy(value_alloc, table.values + i);
-    table.psl[i] = 0;
+    // key_allocator::destroy(key_alloc, table.keys + i);
+    // value_allocator::destroy(value_alloc, table.values + i);
+    // table.destroy_key(i);
+    // table.destroy_value(i);
+    // table.psl[i] = 0;
+    table.destroy(i);
   }
 }
 
