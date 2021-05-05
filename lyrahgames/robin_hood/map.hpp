@@ -16,8 +16,8 @@ namespace lyrahgames::robin_hood {
 /// \class map map.hpp lyrahgames/robin_hood/map.hpp
 template <typename key_type,
           typename mapped_type,
-          typename hasher = std::hash<key_type>,
-          typename equality = std::equal_to<key_type>,
+          typename hasher    = std::hash<key_type>,
+          typename equality  = std::equal_to<key_type>,
           typename allocator = std::allocator<key_type>>
 class map {
   template <bool constant>
@@ -25,13 +25,13 @@ class map {
   struct container;
 
  public:
-  using real = float;
+  using real      = float;
   using size_type = size_t;
   // psl_type should be smaller -> uint32_t or even uint16_t
   // psl will not get that long and otherwise
   // it is a bad hash implementation
-  using psl_type = size_t;
-  using iterator = basic_iterator<false>;
+  using psl_type       = size_t;
+  using iterator       = basic_iterator<false>;
   using const_iterator = basic_iterator<true>;
 
   using basic_key_allocator =
@@ -51,6 +51,7 @@ class map {
 
   friend std::ostream& operator<<(std::ostream& os, const map& m) {
     using namespace std;
+    os << '\n';
     for (size_t i = 0; i < m.table.size; ++i) {
       os << setw(15) << i;
       if (!m.table.psl[i]) {

@@ -8,6 +8,8 @@
 //
 #include <lyrahgames/robin_hood/map.hpp>
 #include <lyrahgames/robin_hood/version.hpp>
+//
+#include "log_value.hpp"
 
 using namespace std;
 using namespace lyrahgames;
@@ -300,32 +302,32 @@ TEST_CASE("Default map construction.") {
   robin_hood::map<string, int> map{};
 
   cout << map << '\n';
-  map["test"] = 1;
-  map["helo"] = 2;
-  map["cd"] = 3;
-  map["cp"] = 4;
-  map["ls"] = 5;
-  map["tree"] = 6;
-  map["cat"] = 7;
+  map["test"]  = 1;
+  map["helo"]  = 2;
+  map["cd"]    = 3;
+  map["cp"]    = 4;
+  map["ls"]    = 5;
+  map["tree"]  = 6;
+  map["cat"]   = 7;
   map["mkdir"] = 8;
-  map["rm"] = 9;
-  map["ls"] = 10;
-  map["b"] = 11;
-  map["bdep"] = 12;
-  map["g++"] = 13;
+  map["rm"]    = 9;
+  map["ls"]    = 10;
+  map["b"]     = 11;
+  map["bdep"]  = 12;
+  map["g++"]   = 13;
   map["clang"] = 14;
-  map["make"] = 15;
-  map["bpkg"] = 16;
-  map["bash"] = 17;
-  map["fish"] = 18;
-  map["top"] = 19;
-  map["htop"] = 20;
-  map["git"] = 21;
-  map["vim"] = 22;
+  map["make"]  = 15;
+  map["bpkg"]  = 16;
+  map["bash"]  = 17;
+  map["fish"]  = 18;
+  map["top"]   = 19;
+  map["htop"]  = 20;
+  map["git"]   = 21;
+  map["vim"]   = 22;
   map["touch"] = 23;
   map["rmdir"] = 24;
-  map["sudo"] = 25;
-  map["nano"] = 26;
+  map["sudo"]  = 25;
+  map["nano"]  = 26;
   cout << map << '\n';
   map.erase("bpkg");
   cout << map << '\n';
@@ -334,116 +336,76 @@ TEST_CASE("Default map construction.") {
     cout << setw(15) << key << setw(15) << value << '\n';
 }
 
-struct test_value {
-  test_value() { ++default_constructor_calls; }
-  test_value(int d) : data{d} { ++constructor_calls; }
-  virtual ~test_value() noexcept { ++destructor_calls; }
-
-  test_value(const test_value& v) : data{v.data} { ++copy_constructor_calls; }
-  test_value& operator=(const test_value& v) {
-    data = v.data;
-    ++copy_assignment_calls;
-    return *this;
-  }
-
-  test_value(test_value&& v) : data{v.data} { ++move_constructor_calls; }
-  test_value& operator=(test_value&& v) {
-    data = v.data;
-    ++move_assignment_calls;
-    return *this;
-  }
-
-  operator int() { return data; }
-
-  static atomic<size_t> default_constructor_calls;
-  static atomic<size_t> constructor_calls;
-  static atomic<size_t> destructor_calls;
-  static atomic<size_t> copy_constructor_calls;
-  static atomic<size_t> copy_assignment_calls;
-  static atomic<size_t> move_constructor_calls;
-  static atomic<size_t> move_assignment_calls;
-
-  static void reset_stats() {
-    default_constructor_calls = 0;
-    constructor_calls = 0;
-    destructor_calls = 0;
-    copy_constructor_calls = 0;
-    copy_assignment_calls = 0;
-    move_constructor_calls = 0;
-    move_assignment_calls = 0;
-  }
-
-  static void print_stats() {
-    cout << setw(30) << "default constructor calls = " << setw(7)
-         << default_constructor_calls << '\n'
-         << setw(30) << "constructor calls = " << setw(7) << constructor_calls
-         << '\n'
-         << setw(30) << "destructor calls = " << setw(7) << destructor_calls
-         << '\n'
-         << setw(30) << "copy constructor calls = " << setw(7)
-         << copy_constructor_calls << '\n'
-         << setw(30) << "copy assignment calls = " << setw(7)
-         << copy_assignment_calls << '\n'
-         << setw(30) << "move constructor calls = " << setw(7)
-         << move_constructor_calls << '\n'
-         << setw(30) << "move assignment calls = " << setw(7)
-         << move_assignment_calls << '\n';
-  }
-
-  int data{};
-};
-
-atomic<size_t> test_value::default_constructor_calls = 0;
-atomic<size_t> test_value::constructor_calls = 0;
-atomic<size_t> test_value::destructor_calls = 0;
-atomic<size_t> test_value::copy_constructor_calls = 0;
-atomic<size_t> test_value::copy_assignment_calls = 0;
-atomic<size_t> test_value::move_constructor_calls = 0;
-atomic<size_t> test_value::move_assignment_calls = 0;
-
-namespace std {
-template <>
-struct hash<test_value> {
-  size_t operator()(test_value v) const noexcept { return hash<int>{}(v.data); }
-};
-}  // namespace std
-
-inline bool operator==(test_value x, test_value y) noexcept {
-  return x.data == y.data;
-}
-
 SCENARIO("") {
+  using log_value = basic_log_value<int, unique_log>;
+
+  reset(log_value::log);
+  struct log::state state {};
+
+  // State and log are always compared and do not have to be captured.
+  // CAPTURE(state);
+  // CAPTURE(log_value::log);
+
+  CHECK(log_value::log == state);
+
   {
-    robin_hood::map<test_value, int> map{};
-    test_value::print_stats();
+    robin_hood::map<log_value, int> map{};
+    CAPTURE(map);
+
+    map.reserve(10);
+    CHECK(log_value::log == state);
+
     map[1] = 1;
-    map[4] = 2;
-    map[5] = 3;
-    map[2] = 4;
-    map[9] = 5;
-    map[17] = 6;
-    map[3] = 7;
-    cout << map << '\n';
-    test_value::print_stats();
+    ++state.counters[state.construct_calls];
+    ++state.counters[state.destruct_calls];
+    ++state.counters[state.copy_construct_calls];
+    ++state.counters[state.hash_calls];
+    CHECK(log_value::log == state);
+
+    map[2] = 2;
+    ++state.counters[state.construct_calls];
+    ++state.counters[state.destruct_calls];
+    ++state.counters[state.copy_construct_calls];
+    ++state.counters[state.hash_calls];
+    CHECK(log_value::log == state);
+
+    map[map.capacity() + 1] = 3;
+    state.counters[state.construct_calls] += 1;
+    state.counters[state.destruct_calls] += 2;
+    state.counters[state.copy_assign_calls] += 1;
+    state.counters[state.move_construct_calls] += 2;
+    state.counters[state.hash_calls] += 1;
+    state.counters[state.equal_calls] += 1;
+    CHECK(log_value::log == state);
+
+    map[2 * map.capacity() + 1] = 4;
+    state.counters[state.construct_calls] += 1;
+    state.counters[state.destruct_calls] += 2;
+    state.counters[state.copy_assign_calls] += 1;
+    state.counters[state.move_construct_calls] += 2;
+    state.counters[state.hash_calls] += 1;
+    state.counters[state.equal_calls] += 2;
+    CHECK(log_value::log == state);
   }
-  test_value::print_stats();
-  test_value::reset_stats();
+  // cout << log_value::log;
+  state.counters[state.destruct_calls] += 4;
+  CHECK(log_value::log == state);
 }
 
-SCENARIO("") {
-  {
-    robin_hood::map<int, test_value> map{};
-    test_value::print_stats();
-    map[1] = 1;
-    map[4] = 2;
-    map[5] = 3;
-    map[2] = 4;
-    map[9] = 5;
-    map[17] = 6;
-    map[3] = 7;
-    cout << map << '\n';
-    test_value::print_stats();
-  }
-  test_value::print_stats();
-  test_value::reset_stats();
-}
+// SCENARIO("") {
+//   {
+//     robin_hood::map<int, test_value> map{};
+//     test_value::print_stats();
+//     map[1] = 1;
+//     map[4] = 2;
+//     map[5] = 3;
+//     map[2] = 4;
+//     map[9] = 5;
+//     map[17] = 6;
+//     map[3] = 7;
+//     cout << map << '\n';
+//     test_value::print_stats();
+//   }
+//   test_value::print_stats();
+//   test_value::reset_stats();
+// }

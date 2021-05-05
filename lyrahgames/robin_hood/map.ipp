@@ -64,26 +64,17 @@ TEMPLATE
 struct MAP::container {
   container() = default;
   container(size_t s)
-      :  //
-         // keys{make_unique<key_type[]>(s)},
-         // values{make_unique<mapped_type[]>(s)},
-         // keys{new key_type[s]},
-         // values{new mapped_type[s]},
-         // psl{new psl_type[s]{0}},
-        keys{key_allocator::allocate(key_alloc, s)},
+      : keys{key_allocator::allocate(key_alloc, s)},
         values{value_allocator::allocate(value_alloc, s)},
         psl{psl_allocator::allocate(psl_alloc, s)},
         size{s} {
     std::fill(psl, psl + size, 0);
-    std::cout << "Container created with size " << size << std::endl;
+    // std::cout << "Container created with size " << size << std::endl;
   }
-  // virtual ~container() noexcept = default;
   virtual ~container() noexcept {
-    // delete[] psl;
-    // delete[] values;
-    // delete[] keys;
     if (!psl) return;
 
+    // Destroy all inserted elements.
     size_type destructions = 0;
     for (size_type i = 0; i < size; ++i) {
       if (!psl[i]) continue;
@@ -92,11 +83,12 @@ struct MAP::container {
       ++destructions;
     }
 
+    // Deallocate memory.
     psl_allocator::deallocate(psl_alloc, psl, size);
     value_allocator::deallocate(value_alloc, values, size);
     key_allocator::deallocate(key_alloc, keys, size);
-    std::cout << "Container destroyed with size " << size << " and "
-              << destructions << " destructions." << std::endl;
+    // std::cout << "Container destroyed with size " << size << " and "
+    //           << destructions << " destructions." << std::endl;
   }
 
   // No copy is allowed.
@@ -198,9 +190,9 @@ void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
     return;
   }
 
-  key_type tmp_key = std::move(table.keys[index]);
+  key_type tmp_key      = std::move(table.keys[index]);
   mapped_type tmp_value = std::move(table.values[index]);
-  table.keys[index] = key;
+  table.keys[index]     = key;
   // table.values[index] = mapped_type{};
   std::swap(psl, table.psl[index]);
   ++psl;
@@ -251,8 +243,8 @@ auto MAP::insert(const key_type& key, size_type index, psl_type psl)
   if (overloaded()) {
     double_capacity_and_rehash();
     const auto [i, p] = static_insert_data(key);
-    index = i;
-    psl = p;
+    index             = i;
+    psl               = p;
   }
   static_insert(key, index, psl);
   return index;
@@ -334,11 +326,11 @@ TEMPLATE
 void MAP::erase_and_move(size_type index) {
   auto next_index = next(index);
   while (table.psl[next_index] > 1) {
-    table.keys[index] = std::move(table.keys[next_index]);
+    table.keys[index]   = std::move(table.keys[next_index]);
     table.values[index] = std::move(table.values[next_index]);
-    table.psl[index] = table.psl[next_index] - 1;
+    table.psl[index]    = table.psl[next_index] - 1;
 
-    index = next_index;
+    index      = next_index;
     next_index = next(next_index);
   }
   key_allocator::destroy(key_alloc, table.keys + index);
@@ -385,7 +377,7 @@ template <typename pair_iterator>
 void MAP::insert(pair_iterator first, pair_iterator last) {
   for (auto it = first; it != last; ++it) {
     const auto& [key, value] = *it;
-    operator[](key) = value;
+    operator[](key)          = value;
   }
 }
 
