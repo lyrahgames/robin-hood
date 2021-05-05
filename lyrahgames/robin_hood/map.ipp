@@ -388,6 +388,28 @@ void MAP::insert(key_iterator first, key_iterator last, value_iterator v) {
     operator[](*it) = *v;
 }
 
+TEMPLATE
+MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list) {
+  rehash(list.size());
+  insert(list.begin(), list.end());
+}
+
+TEMPLATE
+inline std::ostream& operator<<(std::ostream& os, const MAP& m) {
+  using namespace std;
+  os << '\n';
+  for (size_t i = 0; i < m.table.size; ++i) {
+    os << setw(15) << i;
+    if (!m.table.psl[i]) {
+      os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
+      continue;
+    }
+    os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
+       << setw(15) << m.table.psl[i] << '\n';
+  }
+  return os;
+}
+
 #undef TEMPLATE
 #undef MAP
 

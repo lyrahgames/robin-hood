@@ -294,68 +294,72 @@ SCENARIO("robin_hood::map: Use of 'reserve' and 'capacity'") {
   }
 }
 
-// SCENARIO("The hash map can be initialized by initializer lists.") {
-//   WHEN("an initializer list with unique keys is used") {
-//     // hash_map<int, int> map{{1, 5}, {-1, 2}, {8, 4}, {5, -4}, {-3, -1}};
-//     // THEN("every key-value-pair can is inserted.") {
-//     //   CHECK(size(map) == 5);
-//     //   CHECK(map(1) == 5);
-//     //   CHECK(map(-1) == 2);
-//     //   CHECK(map(8) == 4);
-//     //   CHECK(map(5) == -4);
-//     //   CHECK(map(-3) == -1);
-//     // }
-//   }
+SCENARIO("robin_hood::map: Initialization by Initializer List Interface") {
+  WHEN("a map is initialized by an initializer list with unique keys") {
+    const robin_hood::map<string, int> map{
+        {"first", 1}, {"second", 2}, {"third", 3}, {"fourth", 4}};
+    CAPTURE(map);
 
-//   // WHEN("an initializer list with non-unique keys is used") {
-//   //   hash_map map{{1, 5}, {-1, 2}, {1, 4}, {5, -4}, {5, -1}};
-//   //   THEN("the mapped value of non-unique keys is one of the given
-//   values.") {
-//   //     CHECK(size(map) == 3);
-//   //     CHECK((map(1) - 5) * (map(1) - 4) == 0);
-//   //     CHECK(map(-1) == 2);
-//   //     CHECK((map(5) + 4) * (map(5) + 1) == 0);
-//   //   }
-//   // }
-// }
+    THEN("all keys can be found in the map.") {
+      CHECK(map.size() == 4);
+      CHECK(map("first") == 1);
+      CHECK(map("second") == 2);
+      CHECK(map("third") == 3);
+      CHECK(map("fourth") == 4);
+    }
+  }
 
-TEST_CASE("Default map construction.") {
-  robin_hood::map<string, int> map{};
+  WHEN("a map is initialized by an initializer list with non-unique keys") {
+    const robin_hood::map<string, int> map{
+        {"first", 1}, {"second", 2}, {"third", 3}, {"first", 4}};
+    CAPTURE(map);
 
-  cout << map << '\n';
-  map["test"]  = 1;
-  map["helo"]  = 2;
-  map["cd"]    = 3;
-  map["cp"]    = 4;
-  map["ls"]    = 5;
-  map["tree"]  = 6;
-  map["cat"]   = 7;
-  map["mkdir"] = 8;
-  map["rm"]    = 9;
-  map["ls"]    = 10;
-  map["b"]     = 11;
-  map["bdep"]  = 12;
-  map["g++"]   = 13;
-  map["clang"] = 14;
-  map["make"]  = 15;
-  map["bpkg"]  = 16;
-  map["bash"]  = 17;
-  map["fish"]  = 18;
-  map["top"]   = 19;
-  map["htop"]  = 20;
-  map["git"]   = 21;
-  map["vim"]   = 22;
-  map["touch"] = 23;
-  map["rmdir"] = 24;
-  map["sudo"]  = 25;
-  map["nano"]  = 26;
-  cout << map << '\n';
-  map.erase("bpkg");
-  cout << map << '\n';
-
-  for (auto [key, value] : map)
-    cout << setw(15) << key << setw(15) << value << '\n';
+    THEN("the mapped value of a non-unique key is the last given value.") {
+      CHECK(map.size() == 3);
+      CHECK(map("first") == 4);
+      CHECK(map("second") == 2);
+      CHECK(map("third") == 3);
+    }
+  }
 }
+
+// TEST_CASE("Default map construction.") {
+//   robin_hood::map<string, int> map{};
+
+//   cout << map << '\n';
+//   map["test"]  = 1;
+//   map["helo"]  = 2;
+//   map["cd"]    = 3;
+//   map["cp"]    = 4;
+//   map["ls"]    = 5;
+//   map["tree"]  = 6;
+//   map["cat"]   = 7;
+//   map["mkdir"] = 8;
+//   map["rm"]    = 9;
+//   map["ls"]    = 10;
+//   map["b"]     = 11;
+//   map["bdep"]  = 12;
+//   map["g++"]   = 13;
+//   map["clang"] = 14;
+//   map["make"]  = 15;
+//   map["bpkg"]  = 16;
+//   map["bash"]  = 17;
+//   map["fish"]  = 18;
+//   map["top"]   = 19;
+//   map["htop"]  = 20;
+//   map["git"]   = 21;
+//   map["vim"]   = 22;
+//   map["touch"] = 23;
+//   map["rmdir"] = 24;
+//   map["sudo"]  = 25;
+//   map["nano"]  = 26;
+//   cout << map << '\n';
+//   map.erase("bpkg");
+//   cout << map << '\n';
+
+//   for (auto [key, value] : map)
+//     cout << setw(15) << key << setw(15) << value << '\n';
+// }
 
 SCENARIO("") {
   using log_value = basic_log_value<int, unique_log>;

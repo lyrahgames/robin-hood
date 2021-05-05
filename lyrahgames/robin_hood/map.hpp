@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 //
@@ -49,20 +50,8 @@ class map {
   using psl_allocator = std::allocator_traits<basic_psl_allocator>;
   static basic_psl_allocator psl_alloc;
 
-  friend std::ostream& operator<<(std::ostream& os, const map& m) {
-    using namespace std;
-    os << '\n';
-    for (size_t i = 0; i < m.table.size; ++i) {
-      os << setw(15) << i;
-      if (!m.table.psl[i]) {
-        os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
-        continue;
-      }
-      os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
-         << setw(15) << m.table.psl[i] << '\n';
-    }
-    return os;
-  }
+  map() = default;
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list);
 
   /// Checks if the map contains zero elements.
   bool empty() const { return load == 0; }
@@ -136,6 +125,12 @@ class map {
   void clear();
 
   void shrink_to_fit();
+
+  /// Output the inner state of the map by using the given output stream.
+  /// This function should only be used for debugging.
+  template <typename K, typename M, typename H, typename E, typename A>
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const map<K, M, H, E, A>& m);
 
  private:
   /// Returns the ideal table index of a given key
