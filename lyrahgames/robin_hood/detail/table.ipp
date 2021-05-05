@@ -1,5 +1,8 @@
 namespace lyrahgames::robin_hood::detail {
 
+// Make implementation of members manageable by providing macros
+// for template parameters and class namespace.
+// Try to mimic the C++ syntax to make parsing possible for other tools.
 #define TEMPLATE template <std::destructible K, std::destructible V, typename A>
 #define TABLE    table<K, V, A>
 

@@ -23,32 +23,13 @@ template <typename key_type,
           typename equality  = std::equal_to<key_type>,
           typename allocator = std::allocator<key_type>>
 class map {
-  // template <bool constant>
-  // struct basic_iterator;
-  // struct container;
-  using container = detail::table<key_type, mapped_type, allocator>;
-
  public:
   using real           = float;
+  using container      = detail::table<key_type, mapped_type, allocator>;
   using size_type      = container::size_type;
   using psl_type       = container::psl_type;
   using iterator       = container::iterator;
   using const_iterator = container::const_iterator;
-
-  // using basic_key_allocator =
-  //     typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
-  // using key_allocator = std::allocator_traits<basic_key_allocator>;
-  // static basic_key_allocator key_alloc;
-
-  // using basic_value_allocator =
-  //     typename std::allocator_traits<allocator>::rebind_alloc<mapped_type>;
-  // using value_allocator = std::allocator_traits<basic_value_allocator>;
-  // static basic_value_allocator value_alloc;
-
-  // using basic_psl_allocator =
-  //     typename std::allocator_traits<allocator>::rebind_alloc<psl_type>;
-  // using psl_allocator = std::allocator_traits<basic_psl_allocator>;
-  // static basic_psl_allocator psl_alloc;
 
   map() = default;
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);
