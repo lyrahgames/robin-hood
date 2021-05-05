@@ -1,2 +1,3 @@
 import libs = lyrahgames-robin-hood%lib{lyrahgames-robin-hood}
+import libs += doctest%lib{doctest}
 exe{main-tests}: {hxx cxx}{**} $libs
