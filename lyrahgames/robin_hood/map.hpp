@@ -124,6 +124,8 @@ class map {
   /// Reserves enough memory in the underlying table by creating a new temporary
   /// table with the given size ceiled to the next power of two, rehashing all
   /// elements into it, and swapping its content with the actual table.
+  /// In this case, all iterators and pointers become invalid.
+  /// If the given size is smaller than the current table size, nothing happens.
   void reserve(size_type size);
 
   /// Reserves enough memory in the underlying table such that 'count' elements

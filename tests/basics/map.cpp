@@ -273,6 +273,27 @@ SCENARIO(
   }
 }
 
+SCENARIO("robin_hood::map: Use of 'reserve' and 'capacity'") {
+  GIVEN("a default map") {
+    robin_hood::map<int, int> map{};
+    CHECK(map.capacity() == 8);
+    WHEN("reserving more space than available capacity") {
+      map.reserve(10);
+      THEN(
+          "the next bigger or equal power of two will be chosen as the new "
+          "capacity of the underlying table. In this case, reallocation and "
+          "rehashing are taking place and iterators and pointers are "
+          "invalidated.") {
+        CHECK(map.capacity() == 16);
+      }
+    }
+    WHEN("reserving less space than available capacity") {
+      map.reserve(7);
+      THEN("nothing will happen.") { CHECK(map.capacity() == 8); }
+    }
+  }
+}
+
 // SCENARIO("The hash map can be initialized by initializer lists.") {
 //   WHEN("an initializer list with unique keys is used") {
 //     // hash_map<int, int> map{{1, 5}, {-1, 2}, {8, 4}, {5, -4}, {-3, -1}};
