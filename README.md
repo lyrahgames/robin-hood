@@ -118,7 +118,13 @@
     <tr>
         <td>Dependencies:</td>
         <td>
-            doctest ^ 2.4.0
+            <a href="https://github.com/lyrahgames/xstd">
+                lyrahgames-xstd
+            </a>
+            <br>
+            <a href="https://cppget.org/doctest">
+                doctest
+            </a>
         </td>
     </tr>
 </table>

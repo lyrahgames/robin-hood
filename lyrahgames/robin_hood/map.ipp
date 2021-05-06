@@ -5,9 +5,11 @@ namespace lyrahgames::robin_hood {
 // Make implementation of members manageable by providing macros
 // for template parameters and class namespace.
 // Try to mimic the C++ syntax to make parsing possible for other tools.
-#define TEMPLATE                                                              \
-  template <typename Key, typename Value, typename Hasher, typename Equality, \
-            typename Allocator>
+#define TEMPLATE                                         \
+  template <generic::key Key, generic::value Value,      \
+            generic::hasher<Key>               Hasher,   \
+            generic::equivalence_relation<Key> Equality, \
+            generic::allocator                 Allocator>
 #define MAP map<Key, Value, Hasher, Equality, Allocator>
 
 TEMPLATE

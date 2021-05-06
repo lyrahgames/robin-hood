@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 //
+#include <lyrahgames/robin_hood/meta.hpp>
 #include <lyrahgames/robin_hood/utility.hpp>
 //
 #include <lyrahgames/robin_hood/detail/table.hpp>
@@ -17,11 +18,11 @@
 namespace lyrahgames::robin_hood {
 
 /// \class map map.hpp lyrahgames/robin_hood/map.hpp
-template <typename Key,
-          typename Value,
-          typename Hasher    = std::hash<Key>,
-          typename Equality  = std::equal_to<Key>,
-          typename Allocator = std::allocator<Key>>
+template <generic::key                       Key,
+          generic::value                     Value,
+          generic::hasher<Key>               Hasher    = std::hash<Key>,
+          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
+          generic::allocator                 Allocator = std::allocator<Key>>
 class map {
  public:
   // Template Parameters
@@ -42,23 +43,23 @@ class map {
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);
 
   /// Checks if the map contains zero elements.
-  bool empty() const { return load == 0; }
+  bool empty() const noexcept { return load == 0; }
 
   /// Returns the count of inserted elements.
-  auto size() const { return load; }
+  auto size() const noexcept { return load; }
 
   /// Returns the maximum number of storable elements in the current table.
   /// The capacity is doubled when the the load factor exceeds the maximum load
   /// facter.
-  auto capacity() const { return table.size; }
+  auto capacity() const noexcept { return table.size; }
 
   /// Returns the current load factor of the map.
   /// The load factor is the quotient of size and capacity.
-  auto load_factor() const { return real(size()) / capacity(); }
+  auto load_factor() const noexcept { return real(size()) / capacity(); }
 
   /// Returns the maximum load factor the map is allowed to have before
   /// rehashing all elements with a bigger capacity.
-  auto max_load_factor() const { return max_load; }
+  auto max_load_factor() const noexcept { return max_load; }
 
   /// Sets the maximum load factor the map is allowed to have before
   /// rehashing all elements with a bigger capacity.
@@ -116,7 +117,11 @@ class map {
 
   /// Output the inner state of the map by using the given output stream.
   /// This function should only be used for debugging.
-  template <typename K, typename M, typename H, typename E, typename A>
+  template <generic::key                       K,
+            generic::value                     M,
+            generic::hasher<Key>               H,
+            generic::equivalence_relation<Key> E,
+            generic::allocator                 A>
   friend std::ostream& operator<<(std::ostream&             os,
                                   const map<K, M, H, E, A>& m);
 
@@ -187,6 +192,9 @@ class map {
   // min, max index -> faster begin() and end()
   // min, max psl
 };
+
+template <typename Key, typename Value>
+map(std::initializer_list<std::pair<Key, Value>> list) -> map<Key, Value>;
 
 }  // namespace lyrahgames::robin_hood
 

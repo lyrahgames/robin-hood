@@ -1,4 +1,6 @@
-intf_libs = # Interface dependencies.
+intf_libs =
+import intf_libs += lyrahgames-xstd%lib{lyrahgames-xstd}
+
 impl_libs = # Implementation dependencies.
 #import impl_libs += libhello%lib{hello}
 

@@ -109,6 +109,7 @@ SCENARIO(
 
     GIVEN("some random vector containing values with unique keys") {
       constexpr auto count = 1000;
+
       mt19937 rng{random_device{}()};
 
       vector<int> keys(count);
@@ -157,7 +158,7 @@ SCENARIO(
 
   GIVEN("a hash map with some initial data") {
     vector<pair<int, int>> data{{1, 1}, {2, 2}, {4, 4}, {5, 5}, {10, 10}};
-    hash_map<int, int> map{};
+    hash_map<int, int>     map{};
     map.insert(begin(data), end(data));
     vector<pair<int, int>> read{};
 
@@ -319,6 +320,22 @@ SCENARIO("robin_hood::map: Initialization by Initializer List Interface") {
       CHECK(map("first") == 4);
       CHECK(map("second") == 2);
       CHECK(map("third") == 3);
+    }
+  }
+
+  WHEN("a map is initialized by an initializer list without types") {
+    robin_hood::map map{
+        std::pair{"first", 1}, {"second", 2}, {"third", 3}, {"fourth", 4}};
+    static_assert(
+        std::same_as<decltype(map), robin_hood::map<const char*, int>>);
+    CAPTURE(map);
+
+    THEN("by CTAD all keys can be found in the map.") {
+      CHECK(map.size() == 4);
+      CHECK(map("first") == 1);
+      CHECK(map("second") == 2);
+      CHECK(map("third") == 3);
+      CHECK(map("fourth") == 4);
     }
   }
 }
