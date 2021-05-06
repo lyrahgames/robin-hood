@@ -5,10 +5,10 @@ namespace lyrahgames::robin_hood {
 // Make implementation of members manageable by providing macros
 // for template parameters and class namespace.
 // Try to mimic the C++ syntax to make parsing possible for other tools.
-#define TEMPLATE                                                      \
-  template <typename key_type, typename mapped_type, typename hasher, \
-            typename equality, typename allocator>
-#define MAP map<key_type, mapped_type, hasher, equality, allocator>
+#define TEMPLATE                                                              \
+  template <typename Key, typename Value, typename Hasher, typename Equality, \
+            typename Allocator>
+#define MAP map<Key, Value, Hasher, Equality, Allocator>
 
 TEMPLATE
 void MAP::set_max_load_factor(real x) {

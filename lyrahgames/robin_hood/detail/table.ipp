@@ -3,8 +3,9 @@ namespace lyrahgames::robin_hood::detail {
 // Make implementation of members manageable by providing macros
 // for template parameters and class namespace.
 // Try to mimic the C++ syntax to make parsing possible for other tools.
-#define TEMPLATE template <std::destructible K, std::destructible V, typename A>
-#define TABLE    table<K, V, A>
+#define TEMPLATE \
+  template <std::destructible Key, std::destructible Value, typename Allocator>
+#define TABLE table<Key, Value, Allocator>
 
 TEMPLATE
 template <bool constant>
@@ -121,6 +122,13 @@ inline void TABLE::construct_value(size_type index, arguments&&... args)  //
 TEMPLATE
 inline void TABLE::destroy_value(size_type index) noexcept {
   value_allocator::destroy(value_alloc, values + index);
+}
+
+TEMPLATE
+inline void TABLE::destroy(size_type index) noexcept {
+  destroy_key(index);
+  destroy_value(index);
+  psl[index] = 0;
 }
 
 TEMPLATE

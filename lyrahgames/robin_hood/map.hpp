@@ -17,13 +17,20 @@
 namespace lyrahgames::robin_hood {
 
 /// \class map map.hpp lyrahgames/robin_hood/map.hpp
-template <typename key_type,
-          typename mapped_type,
-          typename hasher    = std::hash<key_type>,
-          typename equality  = std::equal_to<key_type>,
-          typename allocator = std::allocator<key_type>>
+template <typename Key,
+          typename Value,
+          typename Hasher    = std::hash<Key>,
+          typename Equality  = std::equal_to<Key>,
+          typename Allocator = std::allocator<Key>>
 class map {
  public:
+  // Template Parameters
+  using key_type    = Key;
+  using mapped_type = Value;
+  using hasher      = Hasher;
+  using equality    = Equality;
+  using allocator   = Allocator;
+  // Other Types
   using real           = float;
   using container      = detail::table<key_type, mapped_type, allocator>;
   using size_type      = container::size_type;

@@ -6,18 +6,18 @@
 
 namespace lyrahgames::robin_hood::detail {
 
-template <std::destructible K,
-          std::destructible V,
-          typename A = std::allocator<K>>
+template <std::destructible Key,
+          std::destructible Value,
+          typename Allocator = std::allocator<Key>>
 struct table {
   // psl_type should be smaller -> uint32_t or even uint16_t
   // psl will not get that long and otherwise
   // it is a bad hash implementation
   using psl_type   = size_t;
   using size_type  = size_t;
-  using key_type   = K;
-  using value_type = V;
-  using allocator  = A;
+  using key_type   = Key;
+  using value_type = Value;
+  using allocator  = Allocator;
   // Allocator Types
   using basic_key_allocator =
       typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
@@ -69,11 +69,7 @@ struct table {
   void destroy_value(size_type index) noexcept;
 
   /// Destroys key and value at given position and sets the psl invalid.
-  void destroy(size_type index) noexcept {
-    destroy_key(index);
-    destroy_value(index);
-    psl[index] = 0;
-  }
+  void destroy(size_type index) noexcept;
 
   /// Returns if a given index in the table
   /// has been constructed without bounds checking.
