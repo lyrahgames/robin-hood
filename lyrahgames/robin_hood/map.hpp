@@ -74,18 +74,23 @@ class map {
   auto lookup_iterator(const key_type& key) noexcept -> iterator;
   auto lookup_iterator(const key_type& key) const noexcept -> const_iterator;
 
-  auto operator[](const key_type& key) -> mapped_type&;
-
-  bool insert(const key_type& key, const mapped_type& value);
-  bool insert_or_assign(const key_type& key, const mapped_type& value);
-  bool assign(const key_type& key, const mapped_type& value);
-
   /// Returns a reference to the mapped value of the given key. If no such
   /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) -> mapped_type&;
   /// Returns a reference to the mapped value of the given key. If no such
   /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) const -> const mapped_type&;
+
+  // void static_insert(const key_type& key);
+  // void static_insert(key_type&& key);
+  // void try_static_insert(const key_type& key) noexcept;
+  // void try_static_insert(key_type&& key) noexcept;
+
+  auto operator[](const key_type& key) -> mapped_type&;
+
+  bool insert(const key_type& key, const mapped_type& value);
+  bool insert_or_assign(const key_type& key, const mapped_type& value);
+  bool assign(const key_type& key, const mapped_type& value);
 
   template <typename pair_iterator>
   void insert(pair_iterator first, pair_iterator last);
@@ -154,7 +159,9 @@ class map {
   /// Inserts a new key in the map by using Robin Hood swapping algorithm.
   /// Assumes that index and psl were computed by 'insert_data'
   /// and that capacity is big enough such that map will not be overloaded.
-  void static_insert(const key_type& key, size_type index, psl_type psl);
+  // void static_insert(const key_type& key, size_type index, psl_type psl);
+  template <generic::forward_reference<key_type> K>
+  void static_insert(K&& key, size_type index, psl_type psl);
 
   /// Assumes the key has not been inserted and inserts it by possibly changing
   /// the capacity of the underlying table. The function returns the index
@@ -193,7 +200,7 @@ class map {
   // min, max psl
 };
 
-template <typename Key, typename Value>
+template <generic::key Key, generic::value Value>
 map(std::initializer_list<std::pair<Key, Value>> list) -> map<Key, Value>;
 
 }  // namespace lyrahgames::robin_hood

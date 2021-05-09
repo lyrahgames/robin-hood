@@ -148,3 +148,4 @@
 - http://www.idryman.org/blog/2017/07/04/learn-hash-table-the-hard-way/
 - http://www.idryman.org/blog/2017/07/18/learn-hash-table-the-hard-way-2/
 - http://www.idryman.org/blog/2017/08/06/learn-hash-table-the-hard-way-3/
+- https://www.nayuki.io/page/undefined-behavior-in-c-and-cplusplus-programs

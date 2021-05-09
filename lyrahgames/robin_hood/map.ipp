@@ -33,8 +33,8 @@ inline auto MAP::next(size_type index) const noexcept -> size_type {
 TEMPLATE
 inline auto MAP::lookup_data(const key_type& key) const noexcept
     -> std::tuple<size_type, psl_type, bool> {
-  auto   index = ideal_index(key);
-  size_t psl   = 1;
+  auto index = ideal_index(key);
+  auto psl   = psl_type{1};
   for (; psl <= table.psl[index]; ++psl) {
     if (equal(table.keys[index], key)) return {index, psl, true};
     index = next(index);
@@ -45,24 +45,25 @@ inline auto MAP::lookup_data(const key_type& key) const noexcept
 TEMPLATE
 inline auto MAP::static_insert_data(const key_type& key) const noexcept
     -> std::pair<size_type, psl_type> {
-  auto   index = ideal_index(key);
-  size_t psl   = 1;
+  auto index = ideal_index(key);
+  auto psl   = psl_type{1};
   for (; psl <= table.psl[index]; ++psl)
     index = next(index);
   return {index, psl};
 }
 
 TEMPLATE
-void MAP::static_insert(const key_type& key, size_type index, psl_type psl) {
+template <generic::forward_reference<Key> K>
+void MAP::static_insert(K&& key, size_type index, psl_type psl) {
   if (!table.psl[index]) {
     table.psl[index] = psl;
-    table.construct_key(index, key);
+    table.construct_key(index, std::forward<K>(key));
     return;
   }
 
   key_type    tmp_key   = std::move(table.keys[index]);
   mapped_type tmp_value = std::move(table.values[index]);
-  table.keys[index]     = key;
+  table.keys[index]     = std::forward<K>(key);
   std::swap(psl, table.psl[index]);
   ++psl;
   index = next(index);
