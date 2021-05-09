@@ -187,14 +187,15 @@ bool MAP::emplace(K&& key, arguments&&... args)  //
 }
 
 TEMPLATE
-bool MAP::insert_or_assign(const key_type& key, const mapped_type& value) {
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+bool MAP::insert_or_assign(K&& key, V&& value) {
   auto [index, psl, found] = lookup_data(key);
   if (found) {
-    table.values[index] = value;
+    table.values[index] = std::forward<V>(value);
     return false;
   }
-  index = insert(key, index, psl);
-  table.construct_value(index, value);
+  index = insert(std::forward<K>(key), index, psl);
+  table.construct_value(index, std::forward<V>(value));
   return true;
 }
 
@@ -310,8 +311,8 @@ template <generic::pair_input_iterator<Key, Value> T>
 void MAP::insert(T first, T last) {
   for (auto it = first; it != last; ++it) {
     const auto& [key, value] = *it;
-    // insert(key, value);
-    operator[](key) = value;
+    insert_or_assign(key, value);
+    // operator[](key) = value;
   }
 }
 
@@ -319,8 +320,8 @@ TEMPLATE
 template <generic::input_iterator<Key> T, generic::input_iterator<Value> U>
 void MAP::insert(T first, T last, U v) {
   for (auto it = first; it != last; ++it, ++v)
-    // insert(*it, *v);
-    operator[](*it) = *v;
+    insert_or_assign(*it, *v);
+  // operator[](*it) = *v;
 }
 
 TEMPLATE

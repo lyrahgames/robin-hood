@@ -138,16 +138,22 @@ class map {
             generic::input_iterator<mapped_type> U>
   void insert(T first, T last, U v);
 
+  /// Emplace a new element into the map by constructing its value in place.
+  /// This function uses perfect forwarding construction.
   template <generic::forwardable<key_type> K, typename... arguments>
   bool emplace(K&& key, arguments&&... args)  //
       requires std::constructible_from<mapped_type, arguments...>;
-
-  bool insert_or_assign(const key_type& key, const mapped_type& value);
 
   /// Access the element given by key and assign the value to it and return true
   /// if it exists. Otherwise, do nothing and return false.
   template <generic::forwardable<mapped_type> V>
   bool assign(const key_type& key, V&& value);
+
+  /// Insert an element if it not already exists.
+  /// Otherwise, assign a new value to it.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  bool insert_or_assign(K&& key, V&& value);
 
   /// Insert or access the element given by key. If the key has already been
   /// inserted, the functions returns a reference to its value. Otherwise, the
