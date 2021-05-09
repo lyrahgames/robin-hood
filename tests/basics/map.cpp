@@ -340,6 +340,40 @@ SCENARIO("robin_hood::map: Initialization by Initializer List Interface") {
   }
 }
 
+std::ostream& operator<<(std::ostream& os, std::pair<int, int> p) {
+  return os << "{" << p.first << ", " << p.second << "}";
+}
+
+SCENARIO("robin_hood::map: Emplacing Elements") {
+  GIVEN("an empty hash map") {
+    robin_hood::map<int, std::pair<int, int>> map{{1, {2, 3}}};
+    // CAPTURE(map);
+    CHECK(map.size() == 1);
+
+    WHEN("attempting to emplace a value for an exsiting key") {
+      const auto done = map.emplace(1, 4, 5);
+      THEN("nothing is done at all.") {
+        CHECK(!done);
+        CHECK(map.size() == 1);
+        CHECK(map(1).first == 2);
+        CHECK(map(1).second == 3);
+      }
+    }
+
+    WHEN("attempting to emplace a value for a new key") {
+      const auto done = map.emplace(2, 4, 5);
+      THEN(
+          "a new element is added by perfect forward constructing the "
+          "according value based on the given arguments.") {
+        CHECK(done);
+        CHECK(map.size() == 2);
+        CHECK(map(2).first == 4);
+        CHECK(map(2).second == 5);
+      }
+    }
+  }
+}
+
 // TEST_CASE("Default map construction.") {
 //   robin_hood::map<string, int> map{};
 

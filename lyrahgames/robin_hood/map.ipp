@@ -176,6 +176,17 @@ bool MAP::insert(K&& key)  //
 }
 
 TEMPLATE
+template <generic::forwardable<Key> K, typename... arguments>
+bool MAP::emplace(K&& key, arguments&&... args)  //
+    requires std::constructible_from<mapped_type, arguments...> {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) return false;
+  index = insert(std::forward<K>(key), index, psl);
+  table.construct_value(index, std::forward<arguments>(args)...);
+  return true;
+}
+
+TEMPLATE
 bool MAP::insert_or_assign(const key_type& key, const mapped_type& value) {
   auto [index, psl, found] = lookup_data(key);
   if (found) {
@@ -188,14 +199,16 @@ bool MAP::insert_or_assign(const key_type& key, const mapped_type& value) {
 }
 
 TEMPLATE
-bool MAP::assign(const key_type& key, const mapped_type& value) {
+template <generic::forwardable<Value> V>
+bool MAP::assign(const key_type& key, V&& value) {
   auto [index, psl, found] = lookup_data(key);
-  if (found) table.values[index] = value;
+  if (found) table.values[index] = std::forward<V>(value);
   return found;
 }
 
 TEMPLATE
-auto MAP::operator[](const key_type& key) -> mapped_type& {
+auto MAP::operator[](const key_type& key) -> mapped_type&  //
+    requires std::default_initializable<mapped_type> {
   auto [index, psl, found] = lookup_data(key);
   if (found) return table.values[index];
   index = insert(key, index, psl);
@@ -287,7 +300,8 @@ template <generic::pair_input_iterator<Key, Value> T>
 void MAP::insert(T first, T last) {
   for (auto it = first; it != last; ++it) {
     const auto& [key, value] = *it;
-    operator[](key)          = value;
+    // insert(key, value);
+    operator[](key) = value;
   }
 }
 
@@ -295,6 +309,7 @@ TEMPLATE
 template <generic::input_iterator<Key> T, generic::input_iterator<Value> U>
 void MAP::insert(T first, T last, U v) {
   for (auto it = first; it != last; ++it, ++v)
+    // insert(*it, *v);
     operator[](*it) = *v;
 }
 
@@ -304,21 +319,21 @@ MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list) {
   insert(list.begin(), list.end());
 }
 
-TEMPLATE
-inline std::ostream& operator<<(std::ostream& os, const MAP& m) {
-  using namespace std;
-  os << '\n';
-  for (size_t i = 0; i < m.table.size; ++i) {
-    os << setw(15) << i;
-    if (!m.table.psl[i]) {
-      os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
-      continue;
-    }
-    os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
-       << setw(15) << m.table.psl[i] << '\n';
-  }
-  return os;
-}
+// TEMPLATE
+// inline std::ostream& operator<<(std::ostream& os, const MAP& m) {
+//   using namespace std;
+//   os << '\n';
+//   for (size_t i = 0; i < m.table.size; ++i) {
+//     os << setw(15) << i;
+//     if (!m.table.psl[i]) {
+//       os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
+//       continue;
+//     }
+//     os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
+//        << setw(15) << m.table.psl[i] << '\n';
+//   }
+//   return os;
+// }
 
 #undef TEMPLATE
 #undef MAP

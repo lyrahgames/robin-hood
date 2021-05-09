@@ -128,16 +128,33 @@ class map {
   bool insert(K&& key)  //
       requires std::default_initializable<mapped_type>;
 
+  /// Insert key-value pairs given by the range [first, last) into the map.
   template <generic::pair_input_iterator<key_type, mapped_type> T>
   void insert(T first, T last);
 
+  /// Insert given keys in the range [first, last) with their according values
+  /// given in the range [v, v + (last - first)) into the map.
   template <generic::input_iterator<key_type>    T,
             generic::input_iterator<mapped_type> U>
   void insert(T first, T last, U v);
 
+  template <generic::forwardable<key_type> K, typename... arguments>
+  bool emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...>;
+
   bool insert_or_assign(const key_type& key, const mapped_type& value);
-  bool assign(const key_type& key, const mapped_type& value);
-  auto operator[](const key_type& key) -> mapped_type&;
+
+  /// Access the element given by key and assign the value to it and return true
+  /// if it exists. Otherwise, do nothing and return false.
+  template <generic::forwardable<mapped_type> V>
+  bool assign(const key_type& key, V&& value);
+
+  /// Insert or access the element given by key. If the key has already been
+  /// inserted, the functions returns a reference to its value. Otherwise, the
+  /// key will be inserted with a default initialized value to which a reference
+  /// is returned.
+  auto operator[](const key_type& key) -> mapped_type&  //
+      requires std::default_initializable<mapped_type>;
 
   /// Checks if the given key has been inserted into the map.
   bool contains(const key_type& key) const noexcept;
@@ -164,13 +181,27 @@ class map {
 
   /// Output the inner state of the map by using the given output stream.
   /// This function should only be used for debugging.
-  template <generic::key                       K,
-            generic::value                     M,
-            generic::hasher<Key>               H,
-            generic::equivalence_relation<Key> E,
-            generic::allocator                 A>
-  friend std::ostream& operator<<(std::ostream&             os,
-                                  const map<K, M, H, E, A>& m);
+  friend std::ostream& operator<<(std::ostream& os, const map& m) {
+    using namespace std;
+    os << '\n';
+    for (size_t i = 0; i < m.table.size; ++i) {
+      os << setw(15) << i;
+      if (!m.table.psl[i]) {
+        os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
+        continue;
+      }
+      os << setw(15) << m.table.keys[i] << setw(15) << m.table.values[i]
+         << setw(15) << m.table.psl[i] << '\n';
+    }
+    return os;
+  }
+  // template <generic::key                       K,
+  //           generic::value                     M,
+  //           generic::hasher<Key>               H,
+  //           generic::equivalence_relation<Key> E,
+  //           generic::allocator                 A>
+  // friend std::ostream& operator<<(std::ostream&             os,
+  //                                 const map<K, M, H, E, A>& m);
 
  private:
   /// Returns the ideal table index of a given key
