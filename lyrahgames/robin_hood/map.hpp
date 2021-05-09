@@ -67,23 +67,33 @@ class map {
   // real -> open_normalized<real>
   void set_max_load_factor(real x);
 
+  /// Return an iterator to the beginning of the map.
   auto begin() noexcept -> iterator { return table.begin(); }
+
+  /// Return a constant iterator to the beginning of the map.
   auto begin() const noexcept -> const_iterator { return table.begin(); }
+
+  /// Return an iterator to the end of the map.
   auto end() noexcept -> iterator { return table.end(); }
+
+  /// Return a constant iterator to the end of the map.
   auto end() const noexcept -> const_iterator { return table.end(); }
 
+  /// Create an iterator pointing to an element with the given key.
+  /// If this is not possible, return the end iterator.
   auto lookup_iterator(const key_type& key) noexcept -> iterator;
+
+  /// Create a constant iterator pointing to an element with the given key.
+  /// If this is not possible, return the end iterator. @see lookup_iterator
   auto lookup_iterator(const key_type& key) const noexcept -> const_iterator;
 
   /// Returns a reference to the mapped value of the given key. If no such
   /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) -> mapped_type&;
+
   /// Returns a reference to the mapped value of the given key. If no such
   /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) const -> const mapped_type&;
-
-  // void try_static_insert(const key_type& key) noexcept;
-  // void try_static_insert(key_type&& key) noexcept;
 
   /// Statically insert a given element into the map without reallocation and
   /// rehashing. If a reallocation would take place, the functions throws an
