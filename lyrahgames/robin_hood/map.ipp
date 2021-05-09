@@ -261,6 +261,7 @@ void MAP::erase_and_move(size_type index) {
     next_index = next(next_index);
   }
   table.destroy(index);
+  --load;
 }
 
 TEMPLATE
@@ -268,8 +269,17 @@ bool MAP::erase(const key_type& key) {
   const auto [index, psl, found] = lookup_data(key);
   if (!found) return false;
   erase_and_move(index);
-  --load;
   return true;
+}
+
+TEMPLATE
+void MAP::erase(iterator it) {
+  erase_and_move(it.index);
+}
+
+TEMPLATE
+void MAP::erase(const_iterator it) {
+  erase_and_move(it.index);
 }
 
 TEMPLATE

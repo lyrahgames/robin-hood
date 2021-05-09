@@ -374,6 +374,56 @@ SCENARIO("robin_hood::map: Emplacing Elements") {
   }
 }
 
+SCENARIO("robin_hood::map: Erasing Elements by Using Keys and Iterators") {
+  GIVEN("a hash map with some initial data") {
+    robin_hood::map<string, int> map{
+        {"first", 1}, {"second", 2}, {"third", 3}, {"fourth", 4}, {"fifth", 5}};
+    CAPTURE(map);
+    CHECK(map.size() == 5);
+
+    WHEN("erasing a non-existent key") {
+      const auto done = map.erase("sixth");
+      THEN("nothing is done at all.") {
+        CHECK(!done);
+        CHECK(map.size() == 5);
+        CHECK(map("first") == 1);
+        CHECK(map("second") == 2);
+        CHECK(map("third") == 3);
+        CHECK(map("fourth") == 4);
+        CHECK(map("fifth") == 5);
+      }
+    }
+
+    WHEN("erasing an existing key") {
+      const auto done = map.erase("first");
+      THEN("the element with the according is erased from the map.") {
+        CHECK(done);
+        CHECK(map.size() == 4);
+        CHECK_THROWS_AS(map("first"), std::invalid_argument);
+        CHECK(map("second") == 2);
+        CHECK(map("third") == 3);
+        CHECK(map("fourth") == 4);
+        CHECK(map("fifth") == 5);
+      }
+    }
+
+    GIVEN("an iterator to an element inside the map") {
+      auto it = map.lookup_iterator("second");
+      WHEN("erasing the element given by the iterator") {
+        map.erase(it);
+        THEN("the element pointed to by the iterator is erased.") {
+          CHECK(map.size() == 4);
+          CHECK(map("first") == 1);
+          CHECK_THROWS_AS(map("second"), std::invalid_argument);
+          CHECK(map("third") == 3);
+          CHECK(map("fourth") == 4);
+          CHECK(map("fifth") == 5);
+        }
+      }
+    }
+  }
+}
+
 // TEST_CASE("Default map construction.") {
 //   robin_hood::map<string, int> map{};
 

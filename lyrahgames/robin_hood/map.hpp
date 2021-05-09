@@ -163,6 +163,16 @@ class map {
   /// and return 'true'. Otherwise, do nothing and return 'false'.
   bool erase(const key_type& key);
 
+  /// Erase the element inside the map pointed to by the given iterator.
+  /// The function assumes the iterator points to an existent element inside the
+  /// map.
+  void erase(iterator it);
+
+  /// Erase the element inside the map pointed to by the given iterator.
+  /// The function assumes the iterator points to an existent element inside the
+  /// map.
+  void erase(const_iterator it);
+
   /// Reserves enough memory in the underlying table by creating a new temporary
   /// table with the given size ceiled to the next power of two, rehashing all
   /// elements into it, and swapping its content with the actual table.
