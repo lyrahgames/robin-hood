@@ -53,7 +53,7 @@ inline auto MAP::static_insert_data(const key_type& key) const noexcept
 }
 
 TEMPLATE
-template <generic::forward_reference<Key> K>
+template <generic::forwardable<Key> K>
 void MAP::static_insert(K&& key, size_type index, psl_type psl) {
   if (!table.psl[index]) {
     table.psl[index] = psl;
@@ -101,8 +101,8 @@ void MAP::double_capacity_and_rehash() {
 }
 
 TEMPLATE
-auto MAP::insert(const key_type& key, size_type index, psl_type psl)
-    -> size_type {
+template <generic::forwardable<Key> K>
+auto MAP::insert(K&& key, size_type index, psl_type psl) -> size_type {
   ++load;
   if (overloaded()) {
     double_capacity_and_rehash();
@@ -110,17 +110,69 @@ auto MAP::insert(const key_type& key, size_type index, psl_type psl)
     index             = i;
     psl               = p;
   }
-  static_insert(key, index, psl);
+  static_insert(std::forward<K>(key), index, psl);
   return index;
 }
 
 TEMPLATE
-bool MAP::insert(const key_type& key, const mapped_type& value) {
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+bool MAP::static_insert(K&& key, V&& value) {
   auto [index, psl, found] = lookup_data(key);
   if (found) return false;
-  index = insert(key, index, psl);
-  table.construct_value(index, value);
+  ++load;
+  if (overloaded()) {
+    --load;
+    throw std::overflow_error("Failed to statically insert given element!");
+  }
+  static_insert(std::forward<K>(key), index, psl);
+  table.construct_value(index, std::forward<V>(value));
   return true;
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K>
+bool MAP::static_insert(K&& key)  //
+    requires std::default_initializable<mapped_type> {
+  return static_insert(std::forward<K>(key), mapped_type{});
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+bool MAP::try_static_insert(K&& key, V&& value) {
+  ++load;
+  if (overloaded()) {
+    --load;
+    return false;
+  }
+  auto [index, psl, found] = lookup_data(key);
+  if (found) return false;
+  static_insert(std::forward<K>(key), index, psl);
+  table.construct_value(index, std::forward<V>(value));
+  return true;
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K>
+bool MAP::try_static_insert(K&& key)  //
+    requires std::default_initializable<mapped_type> {
+  return try_static_insert(std::forward<K>(key), mapped_type{});
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+bool MAP::insert(K&& key, V&& value) {
+  auto [index, psl, found] = lookup_data(key);
+  if (found) return false;
+  index = insert(std::forward<K>(key), index, psl);
+  table.construct_value(index, std::forward<V>(value));
+  return true;
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K>
+bool MAP::insert(K&& key)  //
+    requires std::default_initializable<mapped_type> {
+  return insert(std::forward<K>(key), mapped_type{});
 }
 
 TEMPLATE
@@ -231,8 +283,8 @@ void MAP::clear() {
 }
 
 TEMPLATE
-template <typename pair_iterator>
-void MAP::insert(pair_iterator first, pair_iterator last) {
+template <generic::pair_input_iterator<Key, Value> T>
+void MAP::insert(T first, T last) {
   for (auto it = first; it != last; ++it) {
     const auto& [key, value] = *it;
     operator[](key)          = value;
@@ -240,8 +292,8 @@ void MAP::insert(pair_iterator first, pair_iterator last) {
 }
 
 TEMPLATE
-template <typename key_iterator, typename value_iterator>
-void MAP::insert(key_iterator first, key_iterator last, value_iterator v) {
+template <generic::input_iterator<Key> T, generic::input_iterator<Value> U>
+void MAP::insert(T first, T last, U v) {
   for (auto it = first; it != last; ++it, ++v)
     operator[](*it) = *v;
 }

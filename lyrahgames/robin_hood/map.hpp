@@ -4,6 +4,7 @@
 #include <cmath>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 //
@@ -81,21 +82,62 @@ class map {
   /// element exists, an exception of type std::invalid_argument is thrown.
   auto operator()(const key_type& key) const -> const mapped_type&;
 
-  // void static_insert(const key_type& key);
-  // void static_insert(key_type&& key);
   // void try_static_insert(const key_type& key) noexcept;
   // void try_static_insert(key_type&& key) noexcept;
 
-  auto operator[](const key_type& key) -> mapped_type&;
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. If a reallocation would take place, the functions throws an
+  /// exception 'std::overlow_error'. If the key has already been inserted, the
+  /// function does nothing and returns false. Otherwise, it inserts the element
+  /// and returns true.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  bool static_insert(K&& key, V&& value);
 
-  bool insert(const key_type& key, const mapped_type& value);
+  /// Does the same as 'static_insert(K&&, V&&)' with a default constructed
+  /// value type. @see 'static_insert'
+  template <generic::forwardable<key_type> K>
+  bool static_insert(K&& key)  //
+      requires std::default_initializable<mapped_type>;
+
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. If a reallocation would take place or if the key has already
+  /// been inserted, the function does nothing and returns false. Otherwise, it
+  /// inserts the element and returns true.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  bool try_static_insert(K&& key, V&& value);
+
+  /// Does the same as 'try_static_insert(K&&, V&&)' with a default constructed
+  /// value type. @see 'try_static_insert'
+  template <generic::forwardable<key_type> K>
+  bool try_static_insert(K&& key)  //
+      requires std::default_initializable<mapped_type>;
+
+  /// Insert a given element into the map with possible reallocation and
+  /// rehashing. If the key has already been inserted, the
+  /// function does nothing and returns false. Otherwise, it inserts the element
+  /// and returns true.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  bool insert(K&& key, V&& value);
+
+  /// Does the same as 'insert(K&&, V&&)' with a default constructed
+  /// value type. @see 'insert'
+  template <generic::forwardable<key_type> K>
+  bool insert(K&& key)  //
+      requires std::default_initializable<mapped_type>;
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  void insert(T first, T last);
+
+  template <generic::input_iterator<key_type>    T,
+            generic::input_iterator<mapped_type> U>
+  void insert(T first, T last, U v);
+
   bool insert_or_assign(const key_type& key, const mapped_type& value);
   bool assign(const key_type& key, const mapped_type& value);
-
-  template <typename pair_iterator>
-  void insert(pair_iterator first, pair_iterator last);
-  template <typename key_iterator, typename value_iterator>
-  void insert(key_iterator first, key_iterator last, value_iterator v);
+  auto operator[](const key_type& key) -> mapped_type&;
 
   /// Checks if the given key has been inserted into the map.
   bool contains(const key_type& key) const noexcept;
@@ -160,13 +202,14 @@ class map {
   /// Assumes that index and psl were computed by 'insert_data'
   /// and that capacity is big enough such that map will not be overloaded.
   // void static_insert(const key_type& key, size_type index, psl_type psl);
-  template <generic::forward_reference<key_type> K>
+  template <generic::forwardable<key_type> K>
   void static_insert(K&& key, size_type index, psl_type psl);
 
   /// Assumes the key has not been inserted and inserts it by possibly changing
   /// the capacity of the underlying table. The function returns the index
   /// where the element has been inserted.
-  auto insert(const key_type& key, size_type index, psl_type psl) -> size_type;
+  template <generic::forwardable<key_type> K>
+  auto insert(K&& key, size_type index, psl_type psl) -> size_type;
 
   /// Directly sets the new size of the underlying table and rehashes all
   /// inserted elements into it. The function assumes that the given size is a
