@@ -35,10 +35,10 @@ class map {
   // Other Types
   using real           = float;
   using container      = detail::table<key_type, mapped_type, allocator>;
-  using size_type      = container::size_type;
-  using psl_type       = container::psl_type;
-  using iterator       = container::iterator;
-  using const_iterator = container::const_iterator;
+  using size_type      = typename container::size_type;
+  using psl_type       = typename container::psl_type;
+  using iterator       = typename container::iterator;
+  using const_iterator = typename container::const_iterator;
 
   map() = default;
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);

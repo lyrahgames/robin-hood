@@ -209,7 +209,7 @@ bool MAP::assign(const key_type& key, V&& value) {
 
 TEMPLATE
 auto MAP::operator[](const key_type& key) -> mapped_type&  //
-    requires std::default_initializable<mapped_type> {
+    requires std::default_initializable<Value> {
   auto [index, psl, found] = lookup_data(key);
   if (found) return table.values[index];
   index = insert(key, index, psl);

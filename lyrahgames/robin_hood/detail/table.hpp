@@ -19,14 +19,16 @@ struct table {
   using value_type = Value;
   using allocator  = Allocator;
   // Allocator Types
-  using basic_key_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<key_type>;
+  using basic_key_allocator = typename std::allocator_traits<
+      allocator>::template rebind_alloc<key_type>;
   using key_allocator = std::allocator_traits<basic_key_allocator>;
-  using basic_value_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<value_type>;
+
+  using basic_value_allocator = typename std::allocator_traits<
+      allocator>::template rebind_alloc<value_type>;
   using value_allocator = std::allocator_traits<basic_value_allocator>;
-  using basic_psl_allocator =
-      typename std::allocator_traits<allocator>::rebind_alloc<psl_type>;
+
+  using basic_psl_allocator = typename std::allocator_traits<
+      allocator>::template rebind_alloc<psl_type>;
   using psl_allocator = std::allocator_traits<basic_psl_allocator>;
 
   template <bool constant>

@@ -45,16 +45,18 @@ struct log {
   log() = default;
   log(size_t i) : id{i} {}
   virtual ~log() noexcept = default;
-  log(log&&)              = default;
-  log& operator=(log&&) = default;
+
+  log(log&&)   = delete;
+  log& operator=(log&&) = delete;
 
   // Copy operations are not allowed.
   log(const log&) = delete;
   log& operator=(const log&) = delete;
 
-  struct state state {};
-  size_t id{};
+  // State
   mutable std::mutex access_mutex{};
+  struct state       state {};
+  size_t             id{};
 };
 
 inline void reset(struct log& log) {
@@ -67,13 +69,13 @@ inline bool operator==(const struct log::state& s1,
   return s1.counters == s2.counters;
 }
 
-inline bool operator==(const struct log& log,
+inline bool operator==(const struct log&        log,
                        const struct log::state& state) noexcept {
   std::scoped_lock lock{log.access_mutex};
   return log.state == state;
 }
 
-inline std::ostream& operator<<(std::ostream& os,
+inline std::ostream& operator<<(std::ostream&            os,
                                 const struct log::state& state) {
   using namespace std;
   os << '\n';
@@ -98,7 +100,7 @@ template <typename T, size_t I>
 struct basic_log_value {
   using type                     = T;
   static constexpr size_t log_id = I;
-  static struct log log;
+  static struct log       log;
 
   basic_log_value() {
     std::scoped_lock lock{log.access_mutex};
