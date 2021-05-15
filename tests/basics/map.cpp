@@ -530,6 +530,41 @@ SCENARIO("robin_hood::map: Insertion of Elements") {
   }
 }
 
+SCENARIO("robin_hood::map: Assigning Values to Elements") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+
+    CHECK(map.size() == 3);
+    CHECK(map(1) == 1);
+    CHECK(map(2) == 2);
+    CHECK(map(3) == 3);
+
+    WHEN("newly assigning an already existing element") {
+      auto done = map.assign(1, 2);
+
+      THEN("the routine succeeds and returns true.") {
+        CHECK(done);
+        CHECK(map.size() == 3);
+        CHECK(map(1) == 2);
+        CHECK(map(2) == 2);
+        CHECK(map(3) == 3);
+      }
+    }
+
+    WHEN("newly assigning a non-existing element") {
+      auto done = map.assign(4, 4);
+
+      THEN("the routine does nothing and returns false.") {
+        CHECK(!done);
+        CHECK(map.size() == 3);
+        CHECK(map(1) == 1);
+        CHECK(map(2) == 2);
+        CHECK(map(3) == 3);
+      }
+    }
+  }
+}
+
 SCENARIO("robin_hood::map: Printing the Map State") {
   robin_hood::map<string, int> map{};
 
