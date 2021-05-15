@@ -11,6 +11,8 @@
 #include <iomanip>
 #include <iostream>
 //
+#include <lyrahgames/xstd/swap.hpp>
+//
 #include <lyrahgames/robin_hood/meta.hpp>
 #include <lyrahgames/robin_hood/utility.hpp>
 //

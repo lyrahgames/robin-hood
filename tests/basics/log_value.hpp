@@ -137,6 +137,11 @@ struct basic_log_value {
     return *this;
   }
 
+  void swap(basic_log_value& y) noexcept {
+    std::swap(value, y.value);
+    ++log.state.counters[log.state.swap_calls];
+  }
+
   operator type() { return value; }
 
   // State

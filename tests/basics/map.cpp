@@ -649,6 +649,11 @@ SCENARIO("robin_hood::map: Printing the Map State") {
 SCENARIO("") {
   using log_value = basic_log_value<int, unique_log>;
 
+  static_assert(xstd::generic::member_swappable<log_value>);
+
+  log_value x, y;
+  robin_hood::swap(x, y);
+
   reset(log_value::log);
   struct log::state state {};
 
@@ -696,9 +701,26 @@ SCENARIO("") {
     state.counters[state.hash_calls] += 1;
     state.counters[state.equal_calls] += 2;
     CHECK(log_value::log == state);
+
+    map[3 * map.capacity()] = 5;
+    ++state.counters[state.construct_calls];
+    ++state.counters[state.destruct_calls];
+    ++state.counters[state.copy_construct_calls];
+    ++state.counters[state.hash_calls];
+    CHECK(log_value::log == state);
+
+    map[4 * map.capacity()] = 6;
+    state.counters[state.construct_calls] += 1;
+    state.counters[state.destruct_calls] += 2;  // urgument and tmp
+    state.counters[state.copy_assign_calls] += 1;
+    state.counters[state.move_construct_calls] += 2;
+    state.counters[state.swap_calls] += 1;
+    state.counters[state.hash_calls] += 1;
+    state.counters[state.equal_calls] += 1;
+    CHECK(log_value::log == state);
   }
   // cout << log_value::log;
-  state.counters[state.destruct_calls] += 4;
+  state.counters[state.destruct_calls] += 6;
   CHECK(log_value::log == state);
 }
 

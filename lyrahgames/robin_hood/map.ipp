@@ -55,6 +55,10 @@ inline auto MAP::static_insert_data(const key_type& key) const noexcept
 TEMPLATE
 template <generic::forwardable<Key> K>
 void MAP::static_insert(K&& key, size_type index, psl_type psl) {
+  // With this, we can use custom swap routines when they are defined as member
+  // functions. Otherwise, we try to use the standard.
+  using xstd::swap;
+
   if (!table.psl[index]) {
     table.psl[index] = psl;
     table.construct_key(index, std::forward<K>(key));
@@ -70,9 +74,9 @@ void MAP::static_insert(K&& key, size_type index, psl_type psl) {
 
   for (; table.psl[index]; ++psl) {
     if (psl > table.psl[index]) {
-      std::swap(psl, table.psl[index]);
-      std::swap(tmp_key, table.keys[index]);
-      std::swap(tmp_value, table.values[index]);
+      swap(psl, table.psl[index]);
+      swap(tmp_key, table.keys[index]);
+      swap(tmp_value, table.values[index]);
     }
     index = next(index);
   }
