@@ -53,8 +53,11 @@ struct TABLE::basic_iterator {
 };
 
 TEMPLATE
-TABLE::table(size_type s)
-    : keys{key_allocator::allocate(key_alloc, s)},
+TABLE::table(size_type s, const allocator& a)
+    : key_alloc{a},
+      value_alloc{a},
+      psl_alloc{a},
+      keys{key_allocator::allocate(key_alloc, s)},
       values{value_allocator::allocate(value_alloc, s)},
       psl{psl_allocator::allocate(psl_alloc, s)},
       size{s} {

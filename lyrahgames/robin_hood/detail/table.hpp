@@ -38,7 +38,7 @@ struct table {
   using const_iterator = basic_iterator<true>;
 
   table() = default;
-  table(size_type s);
+  explicit table(size_type s, const allocator& a = {});
   virtual ~table() noexcept;
 
   table(const table&);

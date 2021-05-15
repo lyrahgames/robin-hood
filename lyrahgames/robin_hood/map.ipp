@@ -88,7 +88,7 @@ void MAP::static_insert(K&& key, size_type index, psl_type psl) {
 
 TEMPLATE
 void MAP::set_capacity_and_rehash(size_type c) {
-  container old_table{c};
+  container old_table{c, alloc};
   table.swap(old_table);
 
   for (size_type i = 0; i < old_table.size; ++i) {
@@ -333,6 +333,12 @@ TEMPLATE
 MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list) {
   rehash(list.size());
   insert(list.begin(), list.end());
+}
+
+TEMPLATE
+MAP::map(size_type s, const hasher& h, const equality& e, const allocator& a)
+    : hash{h}, equal{e}, alloc{a} {
+  rehash(s);
 }
 
 // TEMPLATE

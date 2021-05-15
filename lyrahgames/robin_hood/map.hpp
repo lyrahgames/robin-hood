@@ -45,6 +45,11 @@ class map {
   map() = default;
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);
 
+  explicit map(size_type        s,
+               const hasher&    h = {},
+               const equality&  e = {},
+               const allocator& a = {});
+
   virtual ~map() noexcept = default;
 
   map(const map&) = default;
@@ -294,12 +299,14 @@ class map {
 
  private:
   // State
-  /// Underlying table storing all elements.
-  container table{8};
   /// Functor used to compute the hash of keys.
   hasher hash{};
   /// Functor used to check equality of keys.
   equality equal{};
+  /// Allocator of the underlying table.
+  allocator alloc{};
+  /// Underlying table storing all elements.
+  container table{8, alloc};
   /// Count of elements inserted into the map.
   size_type load{};
   /// Maximum allowed load factor
