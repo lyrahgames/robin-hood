@@ -477,43 +477,96 @@ SCENARIO("robin_hood::map: Static Insertion of Elements") {
   }
 }
 
-// TEST_CASE("Default map construction.") {
-//   robin_hood::map<string, int> map{};
+SCENARIO("robin_hood::map: Insertion of Elements") {
+  GIVEN("an empty map") {
+    robin_hood::map<int, int> map{};
+    CAPTURE(map);
 
-//   cout << map << '\n';
-//   map["test"]  = 1;
-//   map["helo"]  = 2;
-//   map["cd"]    = 3;
-//   map["cp"]    = 4;
-//   map["ls"]    = 5;
-//   map["tree"]  = 6;
-//   map["cat"]   = 7;
-//   map["mkdir"] = 8;
-//   map["rm"]    = 9;
-//   map["ls"]    = 10;
-//   map["b"]     = 11;
-//   map["bdep"]  = 12;
-//   map["g++"]   = 13;
-//   map["clang"] = 14;
-//   map["make"]  = 15;
-//   map["bpkg"]  = 16;
-//   map["bash"]  = 17;
-//   map["fish"]  = 18;
-//   map["top"]   = 19;
-//   map["htop"]  = 20;
-//   map["git"]   = 21;
-//   map["vim"]   = 22;
-//   map["touch"] = 23;
-//   map["rmdir"] = 24;
-//   map["sudo"]  = 25;
-//   map["nano"]  = 26;
-//   cout << map << '\n';
-//   map.erase("bpkg");
-//   cout << map << '\n';
+    THEN("elements can be inserted by using 'insert'.") {
+      auto done = map.insert(1, 1);
+      CHECK(done);
 
-//   for (auto [key, value] : map)
-//     cout << setw(15) << key << setw(15) << value << '\n';
-// }
+      done = map.insert(2);
+      CHECK(done);
+
+      CHECK(map.size() == 2);
+      CHECK(map(1) == 1);
+      CHECK(map(2) == 0);
+
+      WHEN("an element has already been inserted") {
+        done = map.insert(1, 2);
+
+        THEN("nothing is done at all the function returns false.") {
+          CHECK(!done);
+          CHECK(map.size() == 2);
+          CHECK(map(1) == 1);
+          CHECK(map(2) == 0);
+        }
+      }
+
+      WHEN("inserting enough elements") {
+        THEN(
+            "the map will automatically trigger a reallocation and rehashing "
+            "with a larger capacity.") {
+          map.set_max_load_factor(0.5);
+          CHECK(map.capacity() == 8);
+
+          CHECK(map.insert(3, 3));
+          CHECK(map(3) == 3);
+          CHECK(map.size() == 3);
+          CHECK(map.capacity() == 8);
+
+          CHECK(map.insert(4, 4));
+          CHECK(map(4) == 4);
+          CHECK(map.size() == 4);
+          CHECK(map.capacity() == 16);
+
+          CHECK(map(1) == 1);
+          CHECK(map(2) == 0);
+          CHECK(map(3) == 3);
+        }
+      }
+    }
+  }
+}
+
+SCENARIO("robin_hood::map: Printing the Map State") {
+  robin_hood::map<string, int> map{};
+
+  cout << map << '\n';
+  map["test"]  = 1;
+  map["helo"]  = 2;
+  map["cd"]    = 3;
+  map["cp"]    = 4;
+  map["ls"]    = 5;
+  map["tree"]  = 6;
+  map["cat"]   = 7;
+  map["mkdir"] = 8;
+  map["rm"]    = 9;
+  map["ls"]    = 10;
+  map["b"]     = 11;
+  map["bdep"]  = 12;
+  map["g++"]   = 13;
+  map["clang"] = 14;
+  map["make"]  = 15;
+  map["bpkg"]  = 16;
+  map["bash"]  = 17;
+  map["fish"]  = 18;
+  map["top"]   = 19;
+  map["htop"]  = 20;
+  map["git"]   = 21;
+  map["vim"]   = 22;
+  map["touch"] = 23;
+  map["rmdir"] = 24;
+  map["sudo"]  = 25;
+  map["nano"]  = 26;
+  cout << map << '\n';
+  map.erase("bpkg");
+  cout << map << '\n';
+
+  //   for (auto [key, value] : map)
+  //     cout << setw(15) << key << setw(15) << value << '\n';
+}
 
 SCENARIO("") {
   using log_value = basic_log_value<int, unique_log>;
