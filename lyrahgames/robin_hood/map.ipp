@@ -303,6 +303,7 @@ void MAP::clear() {
   for (size_type i = 0; i < table.size; ++i) {
     if (!table.psl[i]) continue;
     table.destroy(i);
+    --load;
   }
 }
 

@@ -582,6 +582,32 @@ SCENARIO("robin_hood::map: Containing Elements") {
   }
 }
 
+SCENARIO("robin_hood::map: Clear all Elements") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+    CAPTURE(map);
+
+    map.reserve(16);
+    CHECK(map.capacity() == 16);
+    CHECK(map.size() == 3);
+    CHECK(map(1) == 1);
+    CHECK(map(2) == 2);
+    CHECK(map(3) == 3);
+
+    WHEN("clearing the map") {
+      map.clear();
+
+      THEN("no element is left but the capacity is the same.") {
+        CHECK(map.capacity() == 16);
+        CHECK(map.size() == 0);
+        CHECK(!map.contains(1));
+        CHECK(!map.contains(2));
+        CHECK(!map.contains(3));
+      }
+    }
+  }
+}
+
 SCENARIO("robin_hood::map: Printing the Map State") {
   robin_hood::map<string, int> map{};
 
