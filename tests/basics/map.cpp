@@ -533,6 +533,7 @@ SCENARIO("robin_hood::map: Insertion of Elements") {
 SCENARIO("robin_hood::map: Assigning Values to Elements") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+    CAPTURE(map);
 
     CHECK(map.size() == 3);
     CHECK(map(1) == 1);
@@ -561,6 +562,22 @@ SCENARIO("robin_hood::map: Assigning Values to Elements") {
         CHECK(map(2) == 2);
         CHECK(map(3) == 3);
       }
+    }
+  }
+}
+
+SCENARIO("robin_hood::map: Containing Elements") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+    CAPTURE(map);
+
+    THEN("it can be checked if the map contains a given key") {
+      const auto& m = map;
+      CHECK(m.contains(1));
+      CHECK(m.contains(2));
+      CHECK(m.contains(3));
+      CHECK(!m.contains(4));
+      CHECK(!m.contains(5));
     }
   }
 }
