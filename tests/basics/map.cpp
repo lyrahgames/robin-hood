@@ -608,6 +608,96 @@ SCENARIO("robin_hood::map: Clear all Elements") {
   }
 }
 
+SCENARIO("robin_hood::map: Copying") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+    CAPTURE(map);
+
+    WHEN("one creates a copy") {
+      auto map2 = map;
+      CAPTURE(map2);
+
+      THEN(
+          "the copy contains the same elements and the original has not "
+          "changed.") {
+        const auto tmp = map2.capacity();
+        CHECK(map.capacity() == tmp);
+        CHECK(map.size() == map2.size());
+        CHECK(map(1) == map2(1));
+        CHECK(map(2) == map2(2));
+        CHECK(map(3) == map2(3));
+
+        map.assign(1, 4);
+        CHECK(map(1) == 4);
+        CHECK(map2(1) == 1);
+
+        WHEN("assigning a copy") {
+          map2 = map;
+
+          THEN("the same happens by first deleting the current content.") {
+            const auto tmp = map2.capacity();
+            CHECK(map.capacity() == tmp);
+            CHECK(map.size() == map2.size());
+            CHECK(map(1) == map2(1));
+            CHECK(map(2) == map2(2));
+            CHECK(map(3) == map2(3));
+
+            map.assign(1, 5);
+            CHECK(map(1) == 5);
+            CHECK(map2(1) == 4);
+          }
+        }
+      }
+    }
+  }
+}
+
+SCENARIO("robin_hood::map: Moving") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
+    CAPTURE(map);
+
+    CHECK(map.capacity() == 8);
+    CHECK(map.size() == 3);
+    CHECK(map(1) == 1);
+    CHECK(map(2) == 2);
+    CHECK(map(3) == 3);
+
+    WHEN("constructing by move") {
+      auto new_map = std::move(map);
+      CAPTURE(new_map);
+
+      THEN(
+          "the new map contains all elements of the old map and the old map is "
+          "left in an invalid state.") {
+        CHECK(new_map.capacity() == 8);
+        CHECK(new_map.size() == 3);
+        CHECK(new_map(1) == 1);
+        CHECK(new_map(2) == 2);
+        CHECK(new_map(3) == 3);
+
+        CHECK(map.capacity() == 0);
+        CHECK(map.size() == 3);
+
+        WHEN("assigning by move") {
+          map = std::move(new_map);
+
+          THEN("the same happens.") {
+            CHECK(map.capacity() == 8);
+            CHECK(map.size() == 3);
+            CHECK(map(1) == 1);
+            CHECK(map(2) == 2);
+            CHECK(map(3) == 3);
+
+            CHECK(new_map.capacity() == 0);
+            CHECK(new_map.size() == 3);
+          }
+        }
+      }
+    }
+  }
+}
+
 SCENARIO("robin_hood::map: Printing the Map State") {
   robin_hood::map<string, int> map{};
 

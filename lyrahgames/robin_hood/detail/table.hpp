@@ -41,11 +41,9 @@ struct table {
   table(size_type s);
   virtual ~table() noexcept;
 
-  // No copy is allowed.
-  table(const table&) = delete;
-  table& operator=(const table&) = delete;
+  table(const table&);
+  table& operator=(const table&);
 
-  // Move should be possible.
   table(table&&) noexcept;
   table& operator=(table&&) noexcept;
 
@@ -91,6 +89,17 @@ struct table {
   value_type* values = nullptr;
   psl_type*   psl    = nullptr;
   size_type   size   = 0;
+
+ private:
+  /// Allocates memory for elements.
+  void init(size_type s);
+
+  /// Destroys all elements and deallocates memory of elements.
+  void free();
+
+  /// Copies all elements contained inside the given map. Assumes current size
+  /// is the same as t.size and no element has been inserted.
+  void copy(const table& t);
 };
 
 }  // namespace lyrahgames::robin_hood::detail

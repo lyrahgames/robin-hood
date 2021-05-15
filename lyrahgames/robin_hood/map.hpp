@@ -45,6 +45,14 @@ class map {
   map() = default;
   map(std::initializer_list<std::pair<key_type, mapped_type>> list);
 
+  virtual ~map() noexcept = default;
+
+  map(const map&) = default;
+  map& operator=(const map&) = default;
+
+  map(map&&)   = default;
+  map& operator=(map&&) = default;
+
   /// Checks if the map contains zero elements.
   bool empty() const noexcept { return load == 0; }
 

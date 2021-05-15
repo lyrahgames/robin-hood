@@ -63,11 +63,7 @@ TABLE::table(size_type s)
 
 TEMPLATE
 TABLE::~table() noexcept {
-  if (!psl) return;
-  clear();
-  psl_allocator::deallocate(psl_alloc, psl, size);
-  value_allocator::deallocate(value_alloc, values, size);
-  key_allocator::deallocate(key_alloc, keys, size);
+  free();
 }
 
 TEMPLATE
@@ -82,11 +78,52 @@ auto TABLE::operator=(table&& t) noexcept -> table& {
 }
 
 TEMPLATE
+TABLE::table(const table& t) : table(t.size) {
+  copy(t);
+}
+
+TEMPLATE
+auto TABLE::operator=(const table& t) -> table& {
+  free();
+  init(t.size);
+  copy(t);
+  return *this;
+}
+
+TEMPLATE
+inline void TABLE::init(size_type s) {
+  keys   = key_allocator::allocate(key_alloc, s);
+  values = value_allocator::allocate(value_alloc, s);
+  psl    = psl_allocator::allocate(psl_alloc, s);
+  std::fill(psl, psl + size, 0);
+  size = s;
+}
+
+TEMPLATE
+inline void TABLE::free() {
+  if (!psl) return;
+  clear();
+  psl_allocator::deallocate(psl_alloc, psl, size);
+  value_allocator::deallocate(value_alloc, values, size);
+  key_allocator::deallocate(key_alloc, keys, size);
+}
+
+TEMPLATE
 inline void TABLE::swap(table& t) noexcept {
   std::swap(keys, t.keys);
   std::swap(values, t.values);
   std::swap(psl, t.psl);
   std::swap(size, t.size);
+}
+
+TEMPLATE
+void TABLE::copy(const table& t) {
+  for (size_type i = 0; i < t.size; ++i) {
+    if (!t.valid(i)) continue;
+    construct_key(i, t.keys[i]);
+    construct_value(i, t.values[i]);
+    psl[i] = t.psl[i];
+  }
 }
 
 TEMPLATE
