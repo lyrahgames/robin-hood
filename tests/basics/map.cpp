@@ -396,7 +396,7 @@ SCENARIO("robin_hood::map: Erasing Elements by Using Keys and Iterators") {
 
     WHEN("erasing an existing key") {
       const auto done = map.erase("first");
-      THEN("the element with the according is erased from the map.") {
+      THEN("the element with the according key is erased from the map.") {
         CHECK(done);
         CHECK(map.size() == 4);
         CHECK_THROWS_AS(map("first"), std::invalid_argument);
@@ -418,6 +418,59 @@ SCENARIO("robin_hood::map: Erasing Elements by Using Keys and Iterators") {
           CHECK(map("third") == 3);
           CHECK(map("fourth") == 4);
           CHECK(map("fifth") == 5);
+        }
+      }
+    }
+  }
+}
+
+SCENARIO("robin_hood::map: Static Insertion of Elements") {
+  GIVEN("a map with known capacity") {
+    robin_hood::map<int, int> map{};
+    CAPTURE(map);
+
+    map.set_max_load_factor(0.5);
+
+    CHECK(map.size() == 0);
+    CHECK(map.capacity() == 8);
+
+    WHEN(
+        "elements are statically inserted such that the load factor does not "
+        "exceed the maximun load factor") {
+      THEN("they are inserted as if 'insert' would have been called.") {
+        CHECK(map.static_insert(1, 1));
+        CHECK(map(1) == 1);
+
+        CHECK(map.static_insert(2));
+        CHECK(map(2) == 0);
+
+        CHECK(map.try_static_insert(3, 3));
+        CHECK(map(3) == 3);
+
+        CHECK(!map.static_insert(1, 2));
+        CHECK(map(1) == 1);
+
+        CHECK(!map.try_static_insert(3));
+        CHECK(map(3) == 3);
+
+        CHECK(map.size() == 3);
+        CHECK(map.capacity() == 8);
+
+        AND_WHEN("the load would exceed the maximum load factor") {
+          THEN("the routine throws an exception.") {
+            CHECK_THROWS_AS(map.static_insert(4, 4), std::overflow_error);
+            CHECK(map.size() == 3);
+            CHECK(map.capacity() == 8);
+          }
+        }
+        AND_WHEN(
+            "the load would exceed the maximum load factor and one tries to "
+            "statically insert a new element") {
+          THEN("the routine does not succeed and returns false.") {
+            CHECK(!map.try_static_insert(4, 4));
+            CHECK(map.size() == 3);
+            CHECK(map.capacity() == 8);
+          }
         }
       }
     }
