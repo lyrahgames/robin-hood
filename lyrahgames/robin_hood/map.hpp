@@ -43,7 +43,10 @@ class map {
   using const_iterator = typename container::const_iterator;
 
   map() = default;
-  map(std::initializer_list<std::pair<key_type, mapped_type>> list);
+  explicit map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+               const hasher&                                           h = {},
+               const equality&                                         e = {},
+               const allocator&                                        a = {});
 
   explicit map(size_type        s,
                const hasher&    h = {},
@@ -319,6 +322,18 @@ class map {
 
 template <generic::key Key, generic::value Value>
 map(std::initializer_list<std::pair<Key, Value>> list) -> map<Key, Value>;
+
+template <generic::key                       Key,
+          generic::value                     Value,
+          generic::hasher<Key>               Hasher    = std::hash<Key>,
+          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
+          generic::allocator                 Allocator = std::allocator<Key>>
+inline auto auto_map(std::initializer_list<std::pair<Key, Value>> list,
+                     const Hasher&                                hash  = {},
+                     const Equality&                              equal = {},
+                     const Allocator&                             alloc = {}) {
+  return map<Key, Value, Hasher, Equality, Allocator>(list, hash, equal, alloc);
+}
 
 }  // namespace lyrahgames::robin_hood
 

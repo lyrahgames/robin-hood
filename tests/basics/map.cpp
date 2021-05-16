@@ -850,7 +850,13 @@ SCENARIO("") {
   CHECK(log_value::log == state);
 
   {
-    robin_hood::map<log_value, int> map{};
+    // robin_hood::map<log_value, int> map{};
+    auto map = robin_hood::auto_map<log_value, int>(
+        {}, [](const log_value& x) -> size_t {
+          std::scoped_lock lock{x.log.access_mutex};
+          ++x.log.state.counters[x.log.state.hash_calls];
+          return x.value;
+        });
     CAPTURE(map);
 
     map.reserve(10);

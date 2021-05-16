@@ -330,8 +330,11 @@ void MAP::insert(T first, T last, U v) {
 }
 
 TEMPLATE
-MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list) {
-  rehash(list.size());
+MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+         const hasher&                                           h,
+         const equality&                                         e,
+         const allocator&                                        a)
+    : map(list.size(), h, e, a) {
   insert(list.begin(), list.end());
 }
 
