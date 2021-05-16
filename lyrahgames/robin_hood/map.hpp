@@ -94,6 +94,13 @@ class map {
   /// Return a constant iterator to the end of the map.
   auto end() const noexcept -> const_iterator { return table.end(); }
 
+  /// If the key is contained in the map then this function returns its index,
+  /// probe sequence length, and 'true'. Otherwise, it would return the index
+  /// where it would have to be inserted with the according probe sequence
+  /// length and 'false'.
+  auto lookup_data(const key_type& key) const noexcept
+      -> std::tuple<size_type, psl_type, bool>;
+
   /// Create an iterator pointing to an element with the given key.
   /// If this is not possible, return the end iterator.
   auto lookup_iterator(const key_type& key) noexcept -> iterator;
@@ -252,13 +259,6 @@ class map {
   /// Advances the given table index by one possibly starting again at zero when
   /// runnin over table size boundary.
   auto next(size_type index) const noexcept -> size_type;
-
-  /// If the key is contained in the map then this function returns its index,
-  /// probe sequence length, and 'true'. Otherwise, it would return the index
-  /// where it would have to be inserted with the according probe sequence
-  /// length and 'false'.
-  auto lookup_data(const key_type& key) const noexcept
-      -> std::tuple<size_type, psl_type, bool>;
 
   /// Checks if the current load factor is bigger
   /// than the maximum allowed load factor.

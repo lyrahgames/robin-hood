@@ -736,13 +736,109 @@ SCENARIO("robin_hood::map: Printing the Map State") {
   //     cout << setw(15) << key << setw(15) << value << '\n';
 }
 
-SCENARIO("") {
+SCENARIO("robin_hood::map: Lookup Statistics for Key Type") {
   using log_value = basic_log_value<int, unique_log>;
 
-  static_assert(xstd::generic::member_swappable<log_value>);
+  GIVEN("a hash map with some elements") {
+    robin_hood::map<log_value, int> map{{1, 1}, {2, 2}, {9, 3},
+                                        {0, 4}, {8, 5}, {5, 6}};
+    CAPTURE(map);
 
-  log_value x, y;
-  robin_hood::swap(x, y);
+    reset(log_value::log);
+    struct log::state state {};
+    CHECK(log_value::log == state);
+
+    WHEN("looking up keys") {
+      {
+        const auto [index, psl, found] = map.lookup_data(1);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(2);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(9);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(0);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(8);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(5);
+        CHECK(found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl;
+        CHECK(log_value::log == state);
+      }
+
+      // Not inserted keys.
+      {
+        const auto [index, psl, found] = map.lookup_data(3);
+        CHECK(!found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl - 1;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(7);
+        CHECK(!found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl - 1;
+        CHECK(log_value::log == state);
+      }
+      {
+        const auto [index, psl, found] = map.lookup_data(18);
+        CHECK(!found);
+        ++state.counters[state.construct_calls];  // Due to API call.
+        ++state.counters[state.destruct_calls];   // Due to API call.
+        ++state.counters[state.hash_calls];
+        state.counters[state.equal_calls] += psl - 1;
+        CHECK(log_value::log == state);
+      }
+    }
+  }
+}
+
+SCENARIO("") {
+  using log_value = basic_log_value<int, unique_log>;
+  static_assert(xstd::generic::member_swappable<log_value>);
 
   reset(log_value::log);
   struct log::state state {};
