@@ -806,11 +806,9 @@ SCENARIO("robin_hood::map::static_insert Statistics for Key Type") {
 
     WHEN("statically inserting elements without collision by lvalue") {
       const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
-      int        i    = 0;
       for (auto key : keys) {
         reset(log_value::log);
-        map.static_insert(key, i);
-        ++i;
+        map.static_insert(key, map.size());
 
         THEN("only the hash function and the copy constructor are called.") {
           state.counters[state.copy_construct_calls] = 1;
@@ -836,11 +834,9 @@ SCENARIO("robin_hood::map::static_insert Statistics for Key Type") {
 
     WHEN("statically inserting elements without collision by rvalue") {
       const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
-      int        i    = 0;
       for (auto key : keys) {
         reset(log_value::log);
-        map.static_insert(std::move(key), i);
-        ++i;
+        map.static_insert(std::move(key), map.size());
 
         THEN("only the hash function and the move constructor are called.") {
           state.counters[state.move_construct_calls] = 1;
@@ -866,11 +862,9 @@ SCENARIO("robin_hood::map::static_insert Statistics for Key Type") {
 
     WHEN("statically inserting elements without collision by construction") {
       auto keys = {1, 2, 7, 11, 64};
-      int  i    = 0;
       for (auto key : keys) {
         reset(log_value::log);
-        map.static_insert(key, i);
-        ++i;
+        map.static_insert(key, map.size());
 
         THEN("only the hash function and the move constructor are called.") {
           state.counters[state.construct_calls]      = 1;
