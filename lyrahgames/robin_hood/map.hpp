@@ -346,13 +346,13 @@ class map {
   /// Assumes that index and psl were computed by 'insert_data'
   /// and that capacity is big enough such that map will not be overloaded.
   // void static_insert(const key_type& key, size_type index, psl_type psl);
-  template <generic::forwardable<key_type> K>
+  template <generic::forward_reference<key_type> K>
   void static_insert(K&& key, size_type index, psl_type psl);
 
   /// Assumes the key has not been inserted and inserts it by possibly changing
   /// the capacity of the underlying table. The function returns the index
   /// where the element has been inserted.
-  template <generic::forwardable<key_type> K>
+  template <generic::forward_reference<key_type> K>
   auto insert(K&& key, size_type index, psl_type psl) -> size_type;
 
   /// Directly sets the new size of the underlying table and rehashes all

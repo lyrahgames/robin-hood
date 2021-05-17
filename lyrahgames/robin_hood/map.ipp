@@ -53,7 +53,7 @@ inline auto MAP::static_insert_data(const key_type& key) const noexcept
 }
 
 TEMPLATE
-template <generic::forwardable<Key> K>
+template <generic::forward_reference<Key> K>
 void MAP::static_insert(K&& key, size_type index, psl_type psl) {
   // With this, we can use custom swap routines when they are defined as member
   // functions. Otherwise, we try to use the standard.
@@ -105,7 +105,7 @@ void MAP::double_capacity_and_rehash() {
 }
 
 TEMPLATE
-template <generic::forwardable<Key> K>
+template <generic::forward_reference<Key> K>
 auto MAP::insert(K&& key, size_type index, psl_type psl) -> size_type {
   ++load;
   if (overloaded()) {
@@ -121,14 +121,16 @@ auto MAP::insert(K&& key, size_type index, psl_type psl) -> size_type {
 TEMPLATE
 template <generic::forwardable<Key> K, generic::forwardable<Value> V>
 bool MAP::static_insert(K&& key, V&& value) {
-  auto [index, psl, found] = lookup_data(key);
+  // This makes sure key is constructed if it is not a direct forward reference.
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) return false;
   ++load;
   if (overloaded()) {
     --load;
     throw std::overflow_error("Failed to statically insert given element!");
   }
-  static_insert(std::forward<K>(key), index, psl);
+  static_insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
   return true;
 }
@@ -148,9 +150,11 @@ bool MAP::try_static_insert(K&& key, V&& value) {
     --load;
     return false;
   }
-  auto [index, psl, found] = lookup_data(key);
+  // This makes sure key is constructed if it is not a direct forward reference.
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) return false;
-  static_insert(std::forward<K>(key), index, psl);
+  static_insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
   return true;
 }
@@ -165,9 +169,11 @@ bool MAP::try_static_insert(K&& key)  //
 TEMPLATE
 template <generic::forwardable<Key> K, generic::forwardable<Value> V>
 bool MAP::insert(K&& key, V&& value) {
-  auto [index, psl, found] = lookup_data(key);
+  // This makes sure key is constructed if it is not a direct forward reference.
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) return false;
-  index = insert(std::forward<K>(key), index, psl);
+  index = insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
   return true;
 }
@@ -183,9 +189,11 @@ TEMPLATE
 template <generic::forwardable<Key> K, typename... arguments>
 bool MAP::emplace(K&& key, arguments&&... args)  //
     requires std::constructible_from<mapped_type, arguments...> {
-  auto [index, psl, found] = lookup_data(key);
+  // This makes sure key is constructed if it is not a direct forward reference.
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) return false;
-  index = insert(std::forward<K>(key), index, psl);
+  index = insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<arguments>(args)...);
   return true;
 }
@@ -193,12 +201,14 @@ bool MAP::emplace(K&& key, arguments&&... args)  //
 TEMPLATE
 template <generic::forwardable<Key> K, generic::forwardable<Value> V>
 bool MAP::insert_or_assign(K&& key, V&& value) {
-  auto [index, psl, found] = lookup_data(key);
+  // This makes sure key is constructed if it is not a direct forward reference.
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) {
     table.values[index] = std::forward<V>(value);
     return false;
   }
-  index = insert(std::forward<K>(key), index, psl);
+  index = insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
   return true;
 }

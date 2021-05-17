@@ -2,6 +2,7 @@
 #include <concepts>
 #include <iterator>
 //
+#include <lyrahgames/xstd/forward.hpp>
 #include <lyrahgames/xstd/meta.hpp>
 
 namespace lyrahgames::robin_hood {
