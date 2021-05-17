@@ -2,6 +2,7 @@ file{doxyfile}: in{doxyfile}
 {
   in.symbol = '|'
   input_src = "$src_root/lyrahgames"
+  input_out = "$out_root/lyrahgames"
 }
 
 import! doxygen = doxygen%exe{doxygen}
