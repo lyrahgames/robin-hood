@@ -330,18 +330,32 @@ void MAP::insert(T first, T last, U v) {
 }
 
 TEMPLATE
-MAP::map(std::initializer_list<std::pair<key_type, mapped_type>> list,
-         const hasher&                                           h,
-         const equality&                                         e,
-         const allocator&                                        a)
-    : map(list.size(), h, e, a) {
-  insert(list.begin(), list.end());
-}
-
-TEMPLATE
 MAP::map(size_type s, const hasher& h, const equality& e, const allocator& a)
     : hash{h}, equal{e}, alloc{a} {
   rehash(s);
+}
+
+TEMPLATE
+template <generic::pair_input_iterator<Key, Value> T>
+MAP::map(T                first,
+         T                last,
+         size_type        s,
+         const hasher&    h,
+         const equality&  e,
+         const allocator& a)
+    : map(std::max(size_type(std::distance(first, last)), s), h, e, a) {
+  insert(first, last);
+}
+
+TEMPLATE
+template <generic::pair_input_iterator<Key, Value> T>
+MAP::map(T                first,
+         T                last,
+         const hasher&    h,
+         const equality&  e,
+         const allocator& a)
+    : map(std::distance(first, last), h, e, a) {
+  insert(first, last);
 }
 
 // TEMPLATE

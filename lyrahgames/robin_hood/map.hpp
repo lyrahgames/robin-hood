@@ -20,12 +20,15 @@
 
 namespace lyrahgames::robin_hood {
 
+#define TEMPLATE                                                               \
+  template <generic::key Key, generic::value Value,                            \
+            generic::hasher<Key>               Hasher    = std::hash<Key>,     \
+            generic::equivalence_relation<Key> Equality  = std::equal_to<Key>, \
+            generic::allocator                 Allocator = std::allocator<Key>>
+#define MAP map<Key, Value, Hasher, Equality, Allocator>
+
 /// \class map map.hpp lyrahgames/robin_hood/map.hpp
-template <generic::key                       Key,
-          generic::value                     Value,
-          generic::hasher<Key>               Hasher    = std::hash<Key>,
-          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
-          generic::allocator                 Allocator = std::allocator<Key>>
+TEMPLATE
 class map {
  public:
   // Template Parameters
@@ -43,15 +46,81 @@ class map {
   using const_iterator = typename container::const_iterator;
 
   map() = default;
-  explicit map(std::initializer_list<std::pair<key_type, mapped_type>> list,
-               const hasher&                                           h = {},
-               const equality&                                         e = {},
-               const allocator&                                        a = {});
 
   explicit map(size_type        s,
                const hasher&    h = {},
                const equality&  e = {},
                const allocator& a = {});
+  map(size_type s, const allocator& a) : map(s, hasher{}, equality{}, a) {}
+
+  map(size_type s, const hasher& h, const allocator& a)
+      : map(s, h, equality{}, a) {}
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T                first,
+      T                last,
+      size_type        s,
+      const hasher&    h = {},
+      const equality&  e = {},
+      const allocator& a = {});
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T first, T last, size_type s, const allocator& a)
+      : map(first, last, s, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T first, T last, size_type s, const hasher& h, const allocator& a)
+      : map(first, last, s, h, equality{}, a) {}
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T                first,
+      T                last,
+      const hasher&    h = {},
+      const equality&  e = {},
+      const allocator& a = {});
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T first, T last, const allocator& a)
+      : map(first, last, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_iterator<key_type, mapped_type> T>
+  map(T first, T last, const hasher& h, const allocator& a)
+      : map(first, last, h, equality{}, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      size_type                                               s,
+      const hasher&                                           h = {},
+      const equality&                                         e = {},
+      const allocator&                                        a = {})
+      : map(std::begin(list), std::end(list), s, h, e, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      size_type                                               s,
+      const allocator&                                        a)
+      : map(list, s, hasher{}, equality{}, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      size_type                                               s,
+      const hasher&                                           h,
+      const allocator&                                        a)
+      : map(list, s, h, equality{}, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      const hasher&                                           h = {},
+      const equality&                                         e = {},
+      const allocator&                                        a = {})
+      : map(std::begin(list), std::end(list), h, e, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      const allocator&                                        a)
+      : map(list, hasher{}, equality{}, a) {}
+
+  map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+      const hasher&                                           h,
+      const allocator&                                        a)
+      : map(list, h, equality{}, a) {}
+
+  explicit map(const allocator& a) : map(0, hasher{}, equality{}, a) {}
 
   virtual ~map() noexcept = default;
 
@@ -320,20 +389,166 @@ class map {
   // min, max psl
 };
 
-template <generic::key Key, generic::value Value>
-map(std::initializer_list<std::pair<Key, Value>> list) -> map<Key, Value>;
+template <
+    std::input_iterator T,
+    generic::hasher<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>
+        Hasher = std::hash<std::decay_t<
+            typename std::iterator_traits<T>::value_type::first_type>>,
+    generic::equivalence_relation<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>
+                       Equality  = std::equal_to<std::decay_t<
+            typename std::iterator_traits<T>::value_type::first_type>>,
+    generic::allocator Allocator = std::allocator<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>>
+map(T         first,
+    T         last,
+    size_t    s,
+    Hasher    hash  = {},
+    Equality  equal = {},
+    Allocator alloc = {})
+    -> map<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+        std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+        Hasher,
+        Equality,
+        Allocator>;
 
-template <generic::key                       Key,
-          generic::value                     Value,
-          generic::hasher<Key>               Hasher    = std::hash<Key>,
-          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
-          generic::allocator                 Allocator = std::allocator<Key>>
+template <std::input_iterator T, generic::allocator Allocator>
+map(T first, T last, size_t s, Allocator a) -> map<
+    std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+    std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+    std::hash<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>,
+    std::equal_to<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>,
+    Allocator>;
+
+template <std::input_iterator                                            T,
+          generic::hasher<std::decay_t<
+              typename std::iterator_traits<T>::value_type::first_type>> Hasher,
+          generic::allocator Allocator>
+map(T         first,
+    T         last,
+    size_t    s,
+    Hasher    h,
+    Allocator a)  //
+    ->map<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+        std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+        Hasher,
+        std::equal_to<std::decay_t<
+            typename std::iterator_traits<T>::value_type::first_type>>,
+        Allocator>;
+
+template <
+    std::input_iterator T,
+    generic::hasher<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>
+        Hasher = std::hash<std::decay_t<
+            typename std::iterator_traits<T>::value_type::first_type>>,
+    generic::equivalence_relation<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>
+                       Equality  = std::equal_to<std::decay_t<
+            typename std::iterator_traits<T>::value_type::first_type>>,
+    generic::allocator Allocator = std::allocator<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>>
+map(T         first,
+    T         last,
+    Hasher    hash  = {},
+    Equality  equal = {},
+    Allocator alloc = {})
+    -> map<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+        std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+        Hasher,
+        Equality,
+        Allocator>;
+
+template <std::input_iterator T, generic::allocator Allocator>
+map(T first, T last, Allocator a) -> map<
+    std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+    std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+    std::hash<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>,
+    std::equal_to<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>,
+    Allocator>;
+
+template <std::input_iterator                                            T,
+          generic::hasher<std::decay_t<
+              typename std::iterator_traits<T>::value_type::first_type>> Hasher,
+          generic::allocator Allocator>
+map(T first, T last, Hasher h, Allocator a) -> map<
+    std::decay_t<typename std::iterator_traits<T>::value_type::first_type>,
+    std::decay_t<typename std::iterator_traits<T>::value_type::second_type>,
+    Hasher,
+    std::equal_to<
+        std::decay_t<typename std::iterator_traits<T>::value_type::first_type>>,
+    Allocator>;
+
+TEMPLATE
+map(std::initializer_list<std::pair<Key, Value>> list,
+    size_t                                       s,
+    Hasher                                       hash  = {},
+    Equality                                     equal = {},
+    Allocator                                    alloc = {})
+    ->map<Key, Value, Hasher, Equality, Allocator>;
+
+template <generic::key Key, generic::value Value, generic::allocator Allocator>
+map(std::initializer_list<std::pair<Key, Value>> list, size_t s, Allocator a)
+    -> map<Key, Value, std::hash<Key>, std::equal_to<Key>, Allocator>;
+
+template <generic::key         Key,
+          generic::value       Value,
+          generic::hasher<Key> Hasher,
+          generic::allocator   Allocator>
+map(std::initializer_list<std::pair<Key, Value>> list,
+    size_t                                       s,
+    Hasher                                       h,
+    Allocator                                    a)  //
+    ->map<Key, Value, Hasher, std::equal_to<Key>, Allocator>;
+
+TEMPLATE
+map(std::initializer_list<std::pair<Key, Value>> list,
+    Hasher                                       hash  = {},
+    Equality                                     equal = {},
+    Allocator                                    alloc = {})
+    ->map<Key, Value, Hasher, Equality, Allocator>;
+
+template <generic::key Key, generic::value Value, generic::allocator Allocator>
+map(std::initializer_list<std::pair<Key, Value>> list, Allocator a)
+    -> map<Key, Value, std::hash<Key>, std::equal_to<Key>, Allocator>;
+
+template <generic::key         Key,
+          generic::value       Value,
+          generic::hasher<Key> Hasher,
+          generic::allocator   Allocator>
+map(std::initializer_list<std::pair<Key, Value>> list, Hasher h, Allocator a)
+    -> map<Key, Value, Hasher, std::equal_to<Key>, Allocator>;
+
+/// Create map based on given arguments. This function is used as a helper
+/// function to automatically deduce template parameters.
+TEMPLATE
+inline auto auto_map(size_t           size,
+                     const Hasher&    hash  = {},
+                     const Equality&  equal = {},
+                     const Allocator& alloc = {}) {
+  return MAP(size, hash, equal, alloc);
+}
+
+/// Create map based on given arguments. This function is used as a helper
+/// function to automatically deduce template parameters.
+TEMPLATE
 inline auto auto_map(std::initializer_list<std::pair<Key, Value>> list,
                      const Hasher&                                hash  = {},
                      const Equality&                              equal = {},
                      const Allocator&                             alloc = {}) {
-  return map<Key, Value, Hasher, Equality, Allocator>(list, hash, equal, alloc);
+  return MAP(list, hash, equal, alloc);
 }
+
+#undef MAP
+#undef TEMPLATE
 
 }  // namespace lyrahgames::robin_hood
 

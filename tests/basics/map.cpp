@@ -916,20 +916,23 @@ SCENARIO("") {
   CHECK(log_value::log == state);
 }
 
-// SCENARIO("") {
-//   {
-//     robin_hood::map<int, test_value> map{};
-//     test_value::print_stats();
-//     map[1] = 1;
-//     map[4] = 2;
-//     map[5] = 3;
-//     map[2] = 4;
-//     map[9] = 5;
-//     map[17] = 6;
-//     map[3] = 7;
-//     cout << map << '\n';
-//     test_value::print_stats();
-//   }
-//   test_value::print_stats();
-//   test_value::reset_stats();
-// }
+SCENARIO("robin_hood::auto_map") {
+  SUBCASE("Size-Based") {
+    auto map =
+        robin_hood::auto_map<int, int>(0, [](int x) -> size_t { return x; });
+    CAPTURE(map);
+
+    CHECK(map.capacity() == 8);
+    CHECK(map.size() == 0);
+  }
+
+  SUBCASE("Initializer List") {
+    auto map = robin_hood::auto_map<string, int>({{"first", 1}, {"second", 2}});
+    CAPTURE(map);
+
+    CHECK(map.capacity() == 8);
+    CHECK(map.size() == 2);
+    CHECK(map("first") == 1);
+    CHECK(map("second") == 2);
+  }
+}
