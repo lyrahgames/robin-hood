@@ -17,100 +17,215 @@ using namespace lyrahgames;
 template <typename k, typename m>
 using hash_map = robin_hood::map<k, m>;
 
-TEST_CASE("A robin_hood::map") {
-  robin_hood::map<int, int> map{};
-  using real = decltype(map)::real;
+SCENARIO("robin_hood::map::operator(): Accessing Values of Elements") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3},
+                                  {4, 4}, {9, 5}, {13, 6}};
+    CAPTURE(map);
 
-  mt19937 rng{random_device{}()};
+    CHECK(map.size() == 6);
 
-  CHECK(map.empty());
-  CHECK(map.size() == 0);
-  CHECK(map.capacity() >= 8);
-  CHECK(map.load_factor() == 0);
+    WHEN("using the function operator with an existing key") {
+      THEN("returns a reference to the respective value.") {
+        CHECK(map(1) == 1);
+        CHECK(map(2) == 2);
+        CHECK(map(3) == 3);
+        CHECK(map(4) == 4);
+        CHECK(map(9) == 5);
+        CHECK(map(13) == 6);
 
-  map.set_max_load_factor(real(0.5));
+        CHECK(map.size() == 6);
 
-  CHECK(map.max_load_factor() == real(0.5));
+        map[13] = 13;
+        CHECK(map(13) == 13);
+        CHECK(map[13] == 13);
 
-  SUBCASE("can insert and access values through the subscript operator '[]'.") {
-    map[0] = 1;
-    CHECK(map.size() == 1);
-    CHECK(map[0] == 1);
-    CHECK(map.size() == 1);
-
-    map[1] = 3;
-    CHECK(map.size() == 2);
-    CHECK(map[1] == 3);
-    CHECK(map.size() == 2);
-  }
-
-  SUBCASE("will rehash the values if the load factor is too big.") {
-    map.set_max_load_factor(0.7);
-    CHECK(map.max_load_factor() == 0.7f);
-
-    CHECK(map.size() == 0);
-    CHECK(map.load_factor() == 0.0f);
-
-    const auto old_capacity = map.capacity();
-    while (map.capacity() == old_capacity) {
-      map[rng()] = rng();
-      CHECK(map.load_factor() < map.max_load_factor());
-
-      // cout << "{ ";
-      // for (auto [k, v] : map)
-      //   cout << "(" << k << ", " << v << ") ";
-      // cout << "}\n";
+        CHECK(map.size() == 6);
+      }
     }
 
-    CHECK(map.load_factor() < map.max_load_factor());
-    CHECK(map.capacity() == 2 * old_capacity);
+    WHEN("using the function operator with a non-existing key") {
+      THEN("it throws an exception") {
+        CHECK_THROWS_AS(map(7), std::invalid_argument);
+        CHECK_THROWS_AS(map(5), std::invalid_argument);
+        CHECK_THROWS_AS(map(-1), std::invalid_argument);
+        CHECK(map.size() == 6);
+      }
+    }
+
+    GIVEN("a constant reference to this map") {
+      const auto& m = map;
+
+      THEN("the same can be done without changing the values.") {
+        CHECK(m(1) == 1);
+        CHECK(m(2) == 2);
+        CHECK(m(3) == 3);
+        CHECK(m(4) == 4);
+        CHECK(m(9) == 5);
+        CHECK(m(13) == 6);
+        CHECK_THROWS_AS(m(7), std::invalid_argument);
+        CHECK_THROWS_AS(m(5), std::invalid_argument);
+        CHECK_THROWS_AS(m(-1), std::invalid_argument);
+      }
+    }
   }
 
-  SUBCASE(
-      "can access const and non-const values through the function operator "
-      "'()' "
-      "which throws an exception if the given key was not already inserted.") {
-    map[0] = 0;
-    map[1] = 4;
-    map[2] = 1;
-    map[3] = 5;
+  GIVEN("a map using strings as keys") {
+    robin_hood::map<string, int> map{{"first", 1}, {"second", 2}, {"third", 3}};
+    CAPTURE(map);
 
-    CHECK(map.size() == 4);
+    CHECK(map.size() == 3);
 
-    CHECK(map(0) == 0);
-    CHECK(map(1) == 4);
-    CHECK(map(2) == 1);
-    CHECK(map(3) == 5);
-    CHECK_THROWS_AS(map(4), std::invalid_argument);
+    THEN("the function operator can implicitly construct the key.") {
+      CHECK(map("first") == 1);
+      map("first") = 2;
+      CHECK(map("first") == 2);
+      CHECK(map.size() == 3);
 
-    CHECK(map.size() == 4);
-
-    map(2) = 3;
-    CHECK(map(2) == 3);
-
-    CHECK(map.size() == 4);
-
-    const auto& map_ref = map;
-    CHECK(map_ref(0) == 0);
-    CHECK(map_ref(1) == 4);
-    CHECK(map_ref(2) == 3);
-    CHECK(map_ref(3) == 5);
-    CHECK_THROWS_AS(map_ref(4), std::invalid_argument);
-
-    // map_ref(2) = 5;
+      CHECK_THROWS_AS(map("fourth"), std::invalid_argument);
+      CHECK(map.size() == 3);
+    }
   }
 }
 
-SCENARIO(
-    "The hash map can insert and access one or more values through "
-    "iterators.") {
-  GIVEN("a default constructed hash map") {
-    hash_map<int, int> map{};
+SCENARIO("robin_hood::map::operator[]: Insert or Access Elements") {
+  GIVEN("an empty map") {
+    robin_hood::map<int, int> map{};
+    CAPTURE(map);
+
+    CHECK(map.empty());
+    CHECK(map.size() == 0);
+
+    WHEN("calling the subscript operator with a non-existing key") {
+      const auto keys = {1, 5, 3, 16, 27, 18};
+      for (auto key : keys)
+        map[key];
+
+      THEN(
+          "a new element is inserted into the map with the given key and a "
+          "default initialized value.") {
+        CHECK(map.size() == keys.size());
+        for (auto key : keys) {
+          CHECK(map.contains(key));
+          CHECK(map(key) == 0);
+        }
+      }
+    }
+
+    WHEN("assigning the subscript operator with a non-existing key") {
+      const auto keys = {1, 5, 3, 16, 27, 18};
+      for (auto key : keys)
+        map[key] = map.size();
+
+      THEN(
+          "a new element is inserted into the map with the given key and a "
+          "default initialized value. Afterwards, the reference to the created "
+          "value is overriden.") {
+        int i = 0;
+        for (auto key : keys) {
+          CHECK(map.contains(key));
+          CHECK(map(key) == i);
+          ++i;
+        }
+      }
+    }
+  }
+
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 0}, {5, 1}, {7, 2}, {13, 3}, {3, 4}};
+    CAPTURE(map);
+
+    CHECK(map.size() == 5);
+
+    WHEN("using the subcript operator with an existing key") {
+      THEN("it returns a reference to the respective value.") {
+        CHECK(map[1] == 0);
+        CHECK(map[5] == 1);
+        CHECK(map[7] == 2);
+        CHECK(map[13] == 3);
+        CHECK(map[3] == 4);
+
+        CHECK(map.size() == 5);
+
+        map[7] = 7;
+        CHECK(map(7) == 7);
+        CHECK(map[7] == 7);
+
+        CHECK(map.size() == 5);
+
+        map[13] = 13;
+        CHECK(map(13) == 13);
+        CHECK(map[13] == 13);
+
+        CHECK(map.size() == 5);
+      }
+    }
+  }
+
+  GIVEN("a map using strings as keys") {
+    robin_hood::map<string, int> map{{"first", 1}, {"second", 2}, {"third", 3}};
+    CAPTURE(map);
+
+    CHECK(map.size() == 3);
+
+    THEN("the subscript operator can implicitly construct the key.") {
+      CHECK(map["first"] == 1);
+      map["first"] = 2;
+      CHECK(map["first"] == 2);
+      CHECK(map.size() == 3);
+
+      map["fourth"] = 4;
+      CHECK(map["fourth"] == 4);
+      CHECK(map.size() == 4);
+    }
+  }
+}
+
+// TEST_CASE("A robin_hood::map") {
+//   robin_hood::map<int, int> map{};
+//   using real = decltype(map)::real;
+
+//   mt19937 rng{random_device{}()};
+
+//   CHECK(map.empty());
+//   CHECK(map.size() == 0);
+//   CHECK(map.capacity() >= 8);
+//   CHECK(map.load_factor() == 0);
+
+//   map.set_max_load_factor(real(0.5));
+
+//   CHECK(map.max_load_factor() == real(0.5));
+
+//   SUBCASE("will rehash the values if the load factor is too big.") {
+//     map.set_max_load_factor(0.7);
+//     CHECK(map.max_load_factor() == 0.7);
+
+//     CHECK(map.size() == 0);
+//     CHECK(map.load_factor() == 0.0f);
+
+//     const auto old_capacity = map.capacity();
+//     while (map.capacity() == old_capacity) {
+//       map[rng()] = rng();
+//       CHECK(map.load_factor() < map.max_load_factor());
+
+//       // cout << "{ ";
+//       // for (auto [k, v] : map)
+//       //   cout << "(" << k << ", " << v << ") ";
+//       // cout << "}\n";
+//     }
+
+//     CHECK(map.load_factor() < map.max_load_factor());
+//     CHECK(map.capacity() == 2 * old_capacity);
+//   }
+// }
+
+SCENARIO("robin_hood::map::insert: Insertion by Using Iterators") {
+  GIVEN("a default map") {
+    robin_hood::map<int, int> map{};
 
     GIVEN("some random vector containing values with unique keys") {
       constexpr auto count = 1000;
-
-      mt19937 rng{random_device{}()};
+      mt19937        rng{random_device{}()};
 
       vector<int> keys(count);
       iota(begin(keys), end(keys), -count / 2);
@@ -124,12 +239,12 @@ SCENARIO(
       for (auto i = 0; i < count; ++i)
         data.push_back({keys[i], values[i]});
 
-      WHEN("the values are inserted") {
+      WHEN("the paired elements are inserted") {
         map.insert(begin(data), end(data));
 
         THEN(
             "for every value one gets a new element in the hash map with"
-            " the same key and value") {
+            " the same key and value.") {
           CHECK(map.size() == data.size());
           for (const auto& element : data) {
             CHECK_MESSAGE(map(element.first) == element.second,
@@ -143,7 +258,7 @@ SCENARIO(
         map.insert(begin(keys), end(keys), begin(values));
 
         THEN(
-            "for every key-value-pair one gets a new key-value-element in the "
+            "for every key-value pair one gets a new key-value element in the "
             "hash map.") {
           CHECK(map.size() == keys.size());
           for (auto i = 0; i < keys.size(); ++i) {
@@ -157,14 +272,15 @@ SCENARIO(
   }
 
   GIVEN("a hash map with some initial data") {
-    vector<pair<int, int>> data{{1, 1}, {2, 2}, {4, 4}, {5, 5}, {10, 10}};
-    hash_map<int, int>     map{};
+    vector<pair<int, int>>    data{{1, 1}, {2, 2}, {4, 4}, {5, 5}, {10, 10}};
+    robin_hood::map<int, int> map{};
     map.insert(begin(data), end(data));
     vector<pair<int, int>> read{};
 
     WHEN("one iterates with iterators and helper functions") {
       for (auto it = begin(map); it != end(map); ++it)
         read.push_back({(*it).first, (*it).second});
+
       THEN("every element in the hash map is reached in an undefined order") {
         sort(begin(read), end(read));
         CHECK(read == data);
@@ -174,6 +290,7 @@ SCENARIO(
     WHEN("one iterates with iterators and member functions") {
       for (auto it = map.begin(); it != map.end(); ++it)
         read.push_back({(*it).first, (*it).second});
+
       THEN("every element in the hash map is reached in an undefined order") {
         sort(begin(read), end(read));
         CHECK(read == data);
@@ -183,6 +300,7 @@ SCENARIO(
     WHEN("one iterates with a range-based for loop") {
       for (auto [key, value] : map)
         read.push_back({key, value});
+
       THEN("every element in the hash map is reached in an undefined order") {
         sort(begin(read), end(read));
         CHECK(read == data);
@@ -197,6 +315,7 @@ SCENARIO(
           auto [key, value] = *it;
           read.push_back({key, value});
         }
+
         THEN("every element in the hash map is reached in an undefined order") {
           sort(begin(read), end(read));
           CHECK(read == data);
@@ -208,6 +327,7 @@ SCENARIO(
           auto [key, value] = *it;
           read.push_back({key, value});
         }
+
         THEN("every element in the hash map is reached in an undefined order") {
           sort(begin(read), end(read));
           CHECK(read == data);
@@ -217,56 +337,73 @@ SCENARIO(
       WHEN("one iterates with a range-based for loop") {
         for (auto [key, value] : map_ref)
           read.push_back({key, value});
+
         THEN("every element in the hash map is reached in an undefined order") {
           sort(begin(read), end(read));
           CHECK(read == data);
         }
       }
     }
+  }
+}
 
-    SUBCASE(
-        "One can access elements through the member function 'lookup_iterator' "
-        "which "
-        "returns an iterator to the element if it exists and the end iterator "
-        "if it does not.") {
-      {
-        auto [key, value] = *map.lookup_iterator(1);
-        CHECK(key == 1);
-        CHECK(value == 1);
-      }
-      {
-        auto [key, value] = *map.lookup_iterator(2);
-        CHECK(key == 2);
-        CHECK(value == 2);
-      }
-      {
-        auto it = map.lookup_iterator(3);
-        CHECK(it == end(map));
-        CHECK(it == map.end());
-      }
+SCENARIO("robin_hood::map::lookup_iterator: Accessing Elements by Iterator") {
+  GIVEN("a map with some elements") {
+    robin_hood::map<int, int> map{{1, 1}, {2, 2}, {4, 4}, {5, 5}, {10, 10}};
 
-      GIVEN("a constant reference to this hash map") {
-        const auto& map_ref = map;
+    WHEN("'lookup_iterator' is used on existing keys") {
+      const auto keys = {1, 2, 4, 5, 10};
+      int        i    = 0;
+      for (auto key : keys) {
+        ++i;
+        const auto it = map.lookup_iterator(key);
 
-        SUBCASE(
-            "One can access elements through the overloaded member function "
-            "'lookup_iterator' which returns a constant iterator to the "
-            "element if it "
-            "exists and the end-iterator if it does not.") {
-          {
-            auto [key, value] = *map_ref.lookup_iterator(1);
-            CHECK(key == 1);
-            CHECK(value == 1);
+        THEN("an iterator is returned referencing the respective element.") {
+          const auto& [k, v] = *it;
+          CHECK(k == key);
+          CHECK(v == i);
+        }
+      }
+    }
+
+    WHEN("'lookup_iterator' is used on non-existing keys") {
+      const auto keys = {-1, -2, 11, 13, 8};
+      for (auto key : keys) {
+        const auto it = map.lookup_iterator(key);
+
+        THEN("the end iterator is returned.") {
+          CHECK(it == map.end());
+          CHECK(it == end(map));
+        }
+      }
+    }
+
+    GIVEN("a constant reference to this map") {
+      const auto& m = map;
+
+      WHEN("'lookup_iterator' is used on existing keys") {
+        const auto keys = {1, 2, 4, 5, 10};
+        int        i    = 0;
+        for (auto key : keys) {
+          ++i;
+          const auto it = m.lookup_iterator(key);
+
+          THEN("an iterator is returned referencing the respective element.") {
+            const auto [k, v] = *it;
+            CHECK(k == key);
+            CHECK(v == i);
           }
-          {
-            auto [key, value] = *map_ref.lookup_iterator(2);
-            CHECK(key == 2);
-            CHECK(value == 2);
-          }
-          {
-            auto it = map_ref.lookup_iterator(3);
-            CHECK(it == end(map_ref));
-            CHECK(it == map_ref.end());
+        }
+      }
+
+      WHEN("'lookup_iterator' is used on non-existing keys") {
+        const auto keys = {-1, -2, 11, 13, 8};
+        for (auto key : keys) {
+          const auto it = m.lookup_iterator(key);
+
+          THEN("the end iterator is returned.") {
+            CHECK(it == m.end());
+            CHECK(it == end(m));
           }
         }
       }
@@ -274,7 +411,7 @@ SCENARIO(
   }
 }
 
-SCENARIO("robin_hood::map: Use of 'reserve' and 'capacity'") {
+SCENARIO("robin_hood::map:reserve: Reserving Memory") {
   GIVEN("a default map") {
     robin_hood::map<int, int> map{};
     CHECK(map.capacity() == 8);
@@ -295,7 +432,7 @@ SCENARIO("robin_hood::map: Use of 'reserve' and 'capacity'") {
   }
 }
 
-SCENARIO("robin_hood::map: Initialization by Initializer List Interface") {
+SCENARIO("robin_hood::map::map: Initialization by Initializer List") {
   WHEN("a map is initialized by an initializer list with unique keys") {
     const robin_hood::map<string, int> map{
         {"first", 1}, {"second", 2}, {"third", 3}, {"fourth", 4}};
@@ -340,20 +477,15 @@ SCENARIO("robin_hood::map: Initialization by Initializer List Interface") {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, std::pair<int, int> p) {
-  return os << "{" << p.first << ", " << p.second << "}";
-}
-
-SCENARIO("robin_hood::map: Emplacing Elements") {
-  GIVEN("an empty hash map") {
+SCENARIO("robin_hood::map:emplace: Emplacing Elements") {
+  GIVEN("a map") {
     robin_hood::map<int, std::pair<int, int>> map{{1, {2, 3}}};
     // CAPTURE(map);
     CHECK(map.size() == 1);
 
     WHEN("attempting to emplace a value for an exsiting key") {
-      const auto done = map.emplace(1, 4, 5);
-      THEN("nothing is done at all.") {
-        CHECK(!done);
+      THEN("an exception is thrown.") {
+        CHECK_THROWS_AS(map.emplace(1, 4, 5), std::invalid_argument);
         CHECK(map.size() == 1);
         CHECK(map(1).first == 2);
         CHECK(map(1).second == 3);
@@ -361,11 +493,10 @@ SCENARIO("robin_hood::map: Emplacing Elements") {
     }
 
     WHEN("attempting to emplace a value for a new key") {
-      const auto done = map.emplace(2, 4, 5);
+      map.emplace(2, 4, 5);
       THEN(
           "a new element is added by perfect forward constructing the "
           "according value based on the given arguments.") {
-        CHECK(done);
         CHECK(map.size() == 2);
         CHECK(map(2).first == 4);
         CHECK(map(2).second == 5);
@@ -374,14 +505,15 @@ SCENARIO("robin_hood::map: Emplacing Elements") {
   }
 }
 
-SCENARIO("robin_hood::map: Erasing Elements by Using Keys and Iterators") {
+SCENARIO(
+    "robin_hood::map::erase: Erasing Elements by Using Keys and Iterators") {
   GIVEN("a hash map with some initial data") {
     robin_hood::map<string, int> map{
         {"first", 1}, {"second", 2}, {"third", 3}, {"fourth", 4}, {"fifth", 5}};
     CAPTURE(map);
     CHECK(map.size() == 5);
 
-    WHEN("erasing a non-existent key") {
+    WHEN("erasing a non-existing key") {
       const auto done = map.erase("sixth");
       THEN("nothing is done at all.") {
         CHECK(!done);
@@ -424,7 +556,7 @@ SCENARIO("robin_hood::map: Erasing Elements by Using Keys and Iterators") {
   }
 }
 
-SCENARIO("robin_hood::map: Static Insertion of Elements") {
+SCENARIO("robin_hood::map::static_insert: Static Insertion of Elements") {
   GIVEN("a map with known capacity") {
     robin_hood::map<int, int> map{};
     CAPTURE(map);
@@ -438,28 +570,33 @@ SCENARIO("robin_hood::map: Static Insertion of Elements") {
         "elements are statically inserted such that the load factor does not "
         "exceed the maximun load factor") {
       THEN("they are inserted as if 'insert' would have been called.") {
-        CHECK(map.static_insert(1, 1));
+        map.static_insert(1, 1);
         CHECK(map(1) == 1);
 
-        CHECK(map.static_insert(2));
+        map.static_insert(2);
         CHECK(map(2) == 0);
 
         CHECK(map.try_static_insert(3, 3));
         CHECK(map(3) == 3);
 
-        CHECK(!map.static_insert(1, 2));
+        CHECK_THROWS_AS(map.static_insert(1, 2), std::invalid_argument);
         CHECK(map(1) == 1);
 
         CHECK(!map.try_static_insert(3));
         CHECK(map(3) == 3);
 
-        CHECK(map.size() == 3);
+        map.static_insert(4, 4);
+        CHECK(map(4) == 4);
+
+        CHECK(map.size() == 4);
         CHECK(map.capacity() == 8);
 
         AND_WHEN("the load would exceed the maximum load factor") {
           THEN("the routine throws an exception.") {
-            CHECK_THROWS_AS(map.static_insert(4, 4), std::overflow_error);
-            CHECK(map.size() == 3);
+            CHECK_THROWS_AS(map.static_insert(5, 5), std::overflow_error);
+            CHECK(!map.contains(5));
+            CHECK_THROWS_AS(map(5), std::invalid_argument);
+            CHECK(map.size() == 4);
             CHECK(map.capacity() == 8);
           }
         }
@@ -467,8 +604,8 @@ SCENARIO("robin_hood::map: Static Insertion of Elements") {
             "the load would exceed the maximum load factor and one tries to "
             "statically insert a new element") {
           THEN("the routine does not succeed and returns false.") {
-            CHECK(!map.try_static_insert(4, 4));
-            CHECK(map.size() == 3);
+            CHECK(!map.try_static_insert(5, 5));
+            CHECK(map.size() == 4);
             CHECK(map.capacity() == 8);
           }
         }
@@ -477,27 +614,22 @@ SCENARIO("robin_hood::map: Static Insertion of Elements") {
   }
 }
 
-SCENARIO("robin_hood::map: Insertion of Elements") {
+SCENARIO("robin_hood::map::insert: Insertion of Elements") {
   GIVEN("an empty map") {
     robin_hood::map<int, int> map{};
     CAPTURE(map);
 
     THEN("elements can be inserted by using 'insert'.") {
-      auto done = map.insert(1, 1);
-      CHECK(done);
-
-      done = map.insert(2);
-      CHECK(done);
+      map.insert(1, 1);
+      map.insert(2);
 
       CHECK(map.size() == 2);
       CHECK(map(1) == 1);
       CHECK(map(2) == 0);
 
       WHEN("an element has already been inserted") {
-        done = map.insert(1, 2);
-
-        THEN("nothing is done at all the function returns false.") {
-          CHECK(!done);
+        THEN("an exception is thrown.") {
+          CHECK_THROWS_AS(map.insert(1, 2), std::invalid_argument);
           CHECK(map.size() == 2);
           CHECK(map(1) == 1);
           CHECK(map(2) == 0);
@@ -511,26 +643,32 @@ SCENARIO("robin_hood::map: Insertion of Elements") {
           map.set_max_load_factor(0.5);
           CHECK(map.capacity() == 8);
 
-          CHECK(map.insert(3, 3));
+          map.insert(3, 3);
           CHECK(map(3) == 3);
           CHECK(map.size() == 3);
           CHECK(map.capacity() == 8);
 
-          CHECK(map.insert(4, 4));
+          map.insert(4, 4);
           CHECK(map(4) == 4);
           CHECK(map.size() == 4);
+          CHECK(map.capacity() == 8);
+
+          map.insert(5, 5);
+          CHECK(map(5) == 5);
+          CHECK(map.size() == 5);
           CHECK(map.capacity() == 16);
 
           CHECK(map(1) == 1);
           CHECK(map(2) == 0);
           CHECK(map(3) == 3);
+          CHECK(map(4) == 4);
         }
       }
     }
   }
 }
 
-SCENARIO("robin_hood::map: Assigning Values to Elements") {
+SCENARIO("robin_hood::map::assign: Assigning Values to Elements") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
@@ -541,10 +679,9 @@ SCENARIO("robin_hood::map: Assigning Values to Elements") {
     CHECK(map(3) == 3);
 
     WHEN("newly assigning an already existing element") {
-      auto done = map.assign(1, 2);
+      map.assign(1, 2);
 
-      THEN("the routine succeeds and returns true.") {
-        CHECK(done);
+      THEN("the routine succeeds.") {
         CHECK(map.size() == 3);
         CHECK(map(1) == 2);
         CHECK(map(2) == 2);
@@ -553,10 +690,8 @@ SCENARIO("robin_hood::map: Assigning Values to Elements") {
     }
 
     WHEN("newly assigning a non-existing element") {
-      auto done = map.assign(4, 4);
-
-      THEN("the routine does nothing and returns false.") {
-        CHECK(!done);
+      THEN("the routine throws an exception.") {
+        CHECK_THROWS_AS(map.assign(4, 4), std::invalid_argument);
         CHECK(map.size() == 3);
         CHECK(map(1) == 1);
         CHECK(map(2) == 2);
@@ -566,13 +701,14 @@ SCENARIO("robin_hood::map: Assigning Values to Elements") {
   }
 }
 
-SCENARIO("robin_hood::map: Containing Elements") {
+SCENARIO("robin_hood::map::contains: Check Elements by Key") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
+    const auto& m = map;
 
-    THEN("it can be checked if the map contains a given key") {
-      const auto& m = map;
+    THEN(
+        "it can be checked if the map contains an element with the given key") {
       CHECK(m.contains(1));
       CHECK(m.contains(2));
       CHECK(m.contains(3));
@@ -582,7 +718,7 @@ SCENARIO("robin_hood::map: Containing Elements") {
   }
 }
 
-SCENARIO("robin_hood::map: Clear all Elements") {
+SCENARIO("robin_hood::map::clear: Clear all Elements") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
@@ -608,7 +744,7 @@ SCENARIO("robin_hood::map: Clear all Elements") {
   }
 }
 
-SCENARIO("robin_hood::map: Copying") {
+SCENARIO("robin_hood::map::operator=: Copying") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
@@ -652,7 +788,7 @@ SCENARIO("robin_hood::map: Copying") {
   }
 }
 
-SCENARIO("robin_hood::map: Moving") {
+SCENARIO("robin_hood::map::operator=: Moving") {
   GIVEN("a map with some elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
@@ -736,7 +872,7 @@ SCENARIO("robin_hood::map: Printing the Map State") {
   //     cout << setw(15) << key << setw(15) << value << '\n';
 }
 
-SCENARIO("robin_hood::map: Lookup Statistics for Key Type") {
+SCENARIO("robin_hood::map::lookup_data: Lookup Statistics for Key Type") {
   GIVEN("a map with a key type able to log its usage and some elements") {
     // State to compare the log of log_value against.
     struct log::state state {};
@@ -754,9 +890,9 @@ SCENARIO("robin_hood::map: Lookup Statistics for Key Type") {
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
-            "hash function is called once and the number equality comparisons "
-            "is equal to the probe sequence length of the given element in the "
-            "map.") {
+            "hash function is called once and the number of equality "
+            "comparisons is equal to the probe sequence length of the given "
+            "element in the map.") {
           CHECK(found);
           state.counters[state.hash_calls]  = 1;
           state.counters[state.equal_calls] = psl;
@@ -787,7 +923,90 @@ SCENARIO("robin_hood::map: Lookup Statistics for Key Type") {
   }
 }
 
-SCENARIO("robin_hood::map::static_insert Statistics for Key Type") {
+SCENARIO(
+    "lyrahgames::robin_hood::map::static_insert: "
+    "Static Insertion of Elements"
+    "by Using lvalue Keys and with Specific Values") {
+  GIVEN("an empty map with known capacity and maximum load factor") {
+    robin_hood::map<string, int> map{};
+    CAPTURE(map);
+
+    map.set_max_load_factor(0.5);
+    map.reserve(8);
+
+    CHECK(map.capacity() == 8);
+    CHECK(map.size() == 0);
+
+    WHEN(
+        "inserting elements that do not exist such that the maximum "
+        "load factor is not exceeded") {
+      const auto keys =
+          std::initializer_list<string>{"first", "second", "third"};
+
+      THEN("all elements have been inserted without changing capacity.") {
+        for (const auto& key : keys)
+          map.static_insert(key, map.size());
+
+        CHECK(map.size() == keys.size());
+        CHECK(map.capacity() == 8);
+
+        int i = 0;
+        for (const auto& key : keys) {
+          CHECK(map(key) == i);
+          ++i;
+        }
+      }
+    }
+  }
+
+  GIVEN("a map with known capacity and maximum load factor and some elements") {
+    robin_hood::map<string, int> map{
+        {"first", 0}, {"second", 1}, {"third", 2}, {"fourth", 3}};
+    map.set_max_load_factor(0.5);
+    CAPTURE(map);
+
+    CHECK(map.capacity() == 8);
+    CHECK(map.size() == 4);
+
+    WHEN(
+        "inserting elements that would exceed the maximum load "
+        "factor and therefore trigger a reallocation") {
+      const auto keys = std::initializer_list<string>{"fifth", "sixth"};
+
+      THEN("an exception is thrown and the element is not inserted.") {
+        for (const auto& key : keys) {
+          CHECK_THROWS_AS(map.static_insert(key, map.size()),
+                          std::overflow_error);
+        }
+
+        for (const auto& key : keys) {
+          CHECK_THROWS_AS(map(key), std::invalid_argument);
+          CHECK(!map.contains(key));
+        }
+
+        CHECK(map.size() == 4);
+        CHECK(map.capacity() == 8);
+      }
+    }
+
+    WHEN("inserting a key that has already been inserted") {
+      const auto keys = std::initializer_list<string>{"third", "first"};
+
+      THEN("the function returns false and does nothing.") {
+        for (const auto& key : keys)
+          CHECK_THROWS_AS(map.static_insert(key, map.size()),
+                          std::invalid_argument);
+        CHECK(map.capacity() == 8);
+        CHECK(map.size() == 4);
+        CHECK(map("first") == 0);
+        CHECK(map("second") == 1);
+        CHECK(map("third") == 2);
+      }
+    }
+  }
+}
+
+SCENARIO("robin_hood::map::static_insert: Statistics for Key Type") {
   // State to compare the log of log_value against.
   struct log::state state {};
   using log_value = basic_log_value<int, unique_log>;
@@ -970,8 +1189,8 @@ SCENARIO("robin_hood::map::static_insert Statistics for Key Type") {
         map.static_insert(key, map.size());
 
         THEN(
-            "additionally a temporary key is move constructed and destroyed at "
-            "the end. The swapped element is move constructed in its new "
+            "additionally a temporary key is move constructed and destroyedat "
+            "the end. The swapped element is move constructed in its new"
             "place. The given key is copied into the existing location.") {
           state.counters[state.copy_assign_calls]    = 1;
           state.counters[state.move_construct_calls] = 2;

@@ -15,7 +15,8 @@ namespace lyrahgames::robin_hood {
 TEMPLATE
 void MAP::set_max_load_factor(real x) {
   assert((x > 0) || (x < 1));
-  max_load = x;
+  max_load_ratio = x;
+  max_load       = std::floor(max_load_ratio * table.size);
 }
 
 TEMPLATE
@@ -59,6 +60,8 @@ void MAP::static_insert(K&& key, size_type index, psl_type psl) {
   // functions. Otherwise, we try to use the standard.
   using xstd::swap;
 
+  ++load;
+
   if (!table.psl[index]) {
     table.psl[index] = psl;
     table.construct_key(index, std::forward<K>(key));
@@ -89,12 +92,15 @@ void MAP::static_insert(K&& key, size_type index, psl_type psl) {
 TEMPLATE
 void MAP::set_capacity_and_rehash(size_type c) {
   container old_table{c, alloc};
+
   table.swap(old_table);
+  load     = 0;
+  max_load = std::floor(max_load_ratio * table.size);
 
   for (size_type i = 0; i < old_table.size; ++i) {
     if (!old_table.psl[i]) continue;
     const auto [index, psl] = static_insert_data(old_table.keys[i]);
-    static_insert(old_table.keys[i], index, psl);
+    static_insert(std::move(old_table.keys[i]), index, psl);
     table.construct_value(index, std::move(old_table.values[i]));
   }
 }
@@ -107,126 +113,136 @@ void MAP::double_capacity_and_rehash() {
 TEMPLATE
 template <generic::forward_reference<Key> K>
 auto MAP::insert(K&& key, size_type index, psl_type psl) -> size_type {
-  ++load;
   if (overloaded()) {
     double_capacity_and_rehash();
     const auto [i, p] = static_insert_data(key);
-    index             = i;
-    psl               = p;
+
+    index = i;
+    psl   = p;
   }
   static_insert(std::forward<K>(key), index, psl);
   return index;
 }
 
 TEMPLATE
-template <generic::forwardable<Key> K, generic::forwardable<Value> V>
-bool MAP::static_insert(K&& key, V&& value) {
+template <generic::forwardable<Key> K>
+auto MAP::static_insert_key(K&& key) -> size_type {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
   auto [index, psl, found] = lookup_data(k);
-  if (found) return false;
-  ++load;
-  if (overloaded()) {
-    --load;
+  if (found)
+    throw std::invalid_argument(
+        "Failed to insert element that already exists!");
+  if (overloaded())
     throw std::overflow_error("Failed to statically insert given element!");
-  }
   static_insert(std::forward<decltype(k)>(k), index, psl);
-  table.construct_value(index, std::forward<V>(value));
-  return true;
+  return index;
 }
 
 TEMPLATE
 template <generic::forwardable<Key> K>
-bool MAP::static_insert(K&& key)  //
-    requires std::default_initializable<mapped_type> {
-  return static_insert(std::forward<K>(key), mapped_type{});
-}
-
-TEMPLATE
-template <generic::forwardable<Key> K, generic::forwardable<Value> V>
-bool MAP::try_static_insert(K&& key, V&& value) {
-  ++load;
-  if (overloaded()) {
-    --load;
-    return false;
-  }
+auto MAP::insert_key(K&& key) -> size_type {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
   auto [index, psl, found] = lookup_data(k);
-  if (found) return false;
-  static_insert(std::forward<decltype(k)>(k), index, psl);
-  table.construct_value(index, std::forward<V>(value));
-  return true;
-}
-
-TEMPLATE
-template <generic::forwardable<Key> K>
-bool MAP::try_static_insert(K&& key)  //
-    requires std::default_initializable<mapped_type> {
-  return try_static_insert(std::forward<K>(key), mapped_type{});
-}
-
-TEMPLATE
-template <generic::forwardable<Key> K, generic::forwardable<Value> V>
-bool MAP::insert(K&& key, V&& value) {
-  // This makes sure key is constructed if it is not a direct forward reference.
-  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
-  if (found) return false;
+  if (found)
+    throw std::invalid_argument(
+        "Failed to insert element that already exists!");
   index = insert(std::forward<decltype(k)>(k), index, psl);
+  return index;
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+inline void MAP::static_insert(K&& key, V&& value) {
+  const auto index = static_insert_key(std::forward<K>(key));
   table.construct_value(index, std::forward<V>(value));
-  return true;
 }
 
 TEMPLATE
 template <generic::forwardable<Key> K>
-bool MAP::insert(K&& key)  //
+inline void MAP::static_insert(K&& key)  //
     requires std::default_initializable<mapped_type> {
-  return insert(std::forward<K>(key), mapped_type{});
+  const auto index = static_insert_key(std::forward<K>(key));
+  table.construct_value(index);
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+inline void MAP::insert(K&& key, V&& value) {
+  const auto index = insert_key(std::forward<K>(key));
+  table.construct_value(index, std::forward<V>(value));
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K>
+inline void MAP::insert(K&& key)  //
+    requires std::default_initializable<mapped_type> {
+  const auto index = insert_key(std::forward<K>(key));
+  table.construct_value(index);
 }
 
 TEMPLATE
 template <generic::forwardable<Key> K, typename... arguments>
-bool MAP::emplace(K&& key, arguments&&... args)  //
+inline void MAP::static_emplace(K&& key, arguments&&... args)  //
     requires std::constructible_from<mapped_type, arguments...> {
-  // This makes sure key is constructed if it is not a direct forward reference.
-  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
-  if (found) return false;
-  index = insert(std::forward<decltype(k)>(k), index, psl);
+  const auto index = static_insert_key(std::forward<K>(key));
   table.construct_value(index, std::forward<arguments>(args)...);
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, typename... arguments>
+inline void MAP::emplace(K&& key, arguments&&... args)  //
+    requires std::constructible_from<mapped_type, arguments...> {
+  const auto index = insert_key(std::forward<K>(key));
+  table.construct_value(index, std::forward<arguments>(args)...);
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K, generic::forwardable<Value> V>
+inline bool MAP::try_static_insert(K&& key, V&& value) {
+  try {
+    static_insert(std::forward<K>(key), std::forward<V>(value));
+  } catch (...) {
+    return false;
+  }
+  return true;
+}
+
+TEMPLATE
+template <generic::forwardable<Key> K>
+inline bool MAP::try_static_insert(K&& key)  //
+    requires std::default_initializable<mapped_type> {
+  try {
+    static_insert(std::forward<K>(key));
+  } catch (...) {
+    return false;
+  }
   return true;
 }
 
 TEMPLATE
 template <generic::forwardable<Key> K, generic::forwardable<Value> V>
-bool MAP::insert_or_assign(K&& key, V&& value) {
+void MAP::insert_or_assign(K&& key, V&& value) {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
   auto [index, psl, found] = lookup_data(k);
   if (found) {
     table.values[index] = std::forward<V>(value);
-    return false;
+    return;
   }
   index = insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
-  return true;
 }
 
 TEMPLATE
-template <generic::forwardable<Value> V>
-bool MAP::assign(const key_type& key, V&& value) {
-  auto [index, psl, found] = lookup_data(key);
-  if (found) table.values[index] = std::forward<V>(value);
-  return found;
-}
-
-TEMPLATE
-auto MAP::operator[](const key_type& key) -> mapped_type&  //
+template <generic::forwardable<Key> K>
+auto MAP::operator[](K&& key) -> mapped_type&  //
     requires std::default_initializable<Value> {
-  auto [index, psl, found] = lookup_data(key);
+  decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+  auto [index, psl, found] = lookup_data(k);
   if (found) return table.values[index];
-  index = insert(key, index, psl);
+  index = insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index);
   return table.values[index];
 }
@@ -241,6 +257,12 @@ auto MAP::operator()(const key_type& key) -> mapped_type& {
 TEMPLATE
 auto MAP::operator()(const key_type& key) const -> const mapped_type& {
   return const_cast<map&>(*this).operator()(key);
+}
+
+TEMPLATE
+template <generic::forwardable<Value> V>
+void MAP::assign(const key_type& key, V&& value) {
+  operator()(key) = std::forward<V>(value);
 }
 
 TEMPLATE
@@ -306,7 +328,7 @@ void MAP::reserve(size_type size) {
 
 TEMPLATE
 void MAP::rehash(size_type count) {
-  count = std::ceil(count / max_load);
+  count = std::ceil(count / max_load_ratio);
   if (count <= table.size) return;
   const auto new_size = ceil_pow2(count);
   set_capacity_and_rehash(new_size);
@@ -314,11 +336,9 @@ void MAP::rehash(size_type count) {
 
 TEMPLATE
 void MAP::clear() {
-  for (size_type i = 0; i < table.size; ++i) {
-    if (!table.psl[i]) continue;
-    table.destroy(i);
-    --load;
-  }
+  load = 0;
+  for (size_type i = 0; i < table.size; ++i)
+    if (table.psl[i]) table.destroy(i);
 }
 
 TEMPLATE

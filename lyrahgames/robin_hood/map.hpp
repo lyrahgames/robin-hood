@@ -38,7 +38,7 @@ class map {
   using equality    = Equality;
   using allocator   = Allocator;
   // Other Types
-  using real           = float;
+  using real           = double;
   using container      = detail::table<key_type, mapped_type, allocator>;
   using size_type      = typename container::size_type;
   using psl_type       = typename container::psl_type;
@@ -147,7 +147,7 @@ class map {
 
   /// Returns the maximum load factor the map is allowed to have before
   /// rehashing all elements with a bigger capacity.
-  auto max_load_factor() const noexcept { return max_load; }
+  auto max_load_factor() const noexcept { return max_load_ratio; }
 
   /// Sets the maximum load factor the map is allowed to have before
   /// rehashing all elements with a bigger capacity.
@@ -196,13 +196,37 @@ class map {
   /// and returns true.
   template <generic::forwardable<key_type>    K,
             generic::forwardable<mapped_type> V>
-  bool static_insert(K&& key, V&& value);
+  void static_insert(K&& key, V&& value);
 
   /// Does the same as 'static_insert(K&&, V&&)' with a default constructed
   /// value type. @see 'static_insert'
   template <generic::forwardable<key_type> K>
-  bool static_insert(K&& key)  //
+  void static_insert(K&& key)  //
       requires std::default_initializable<mapped_type>;
+
+  /// Insert a given element into the map with possible reallocation and
+  /// rehashing. If the key has already been inserted, the
+  /// function does nothing and returns false. Otherwise, it inserts the element
+  /// and returns true.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  void insert(K&& key, V&& value);
+
+  /// Does the same as 'insert(K&&, V&&)' with a default constructed
+  /// value type. @see 'insert'
+  template <generic::forwardable<key_type> K>
+  void insert(K&& key)  //
+      requires std::default_initializable<mapped_type>;
+
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void static_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...>;
+
+  /// Emplace a new element into the map by constructing its value in place.
+  /// This function uses perfect forwarding construction.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...>;
 
   /// Statically insert a given element into the map without reallocation and
   /// rehashing. If a reallocation would take place or if the key has already
@@ -218,19 +242,21 @@ class map {
   bool try_static_insert(K&& key)  //
       requires std::default_initializable<mapped_type>;
 
-  /// Insert a given element into the map with possible reallocation and
-  /// rehashing. If the key has already been inserted, the
-  /// function does nothing and returns false. Otherwise, it inserts the element
-  /// and returns true.
   template <generic::forwardable<key_type>    K,
             generic::forwardable<mapped_type> V>
-  bool insert(K&& key, V&& value);
+  bool try_insert(K&& key, V&& value);
 
-  /// Does the same as 'insert(K&&, V&&)' with a default constructed
-  /// value type. @see 'insert'
   template <generic::forwardable<key_type> K>
-  bool insert(K&& key)  //
+  bool try_insert(K&& key)  //
       requires std::default_initializable<mapped_type>;
+
+  template <generic::forwardable<key_type> K, typename... arguments>
+  bool try_static_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...>;
+
+  template <generic::forwardable<key_type> K, typename... arguments>
+  bool try_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...>;
 
   /// Insert key-value pairs given by the range [first, last) into the map.
   template <generic::pair_input_iterator<key_type, mapped_type> T>
@@ -242,28 +268,23 @@ class map {
             generic::input_iterator<mapped_type> U>
   void insert(T first, T last, U v);
 
-  /// Emplace a new element into the map by constructing its value in place.
-  /// This function uses perfect forwarding construction.
-  template <generic::forwardable<key_type> K, typename... arguments>
-  bool emplace(K&& key, arguments&&... args)  //
-      requires std::constructible_from<mapped_type, arguments...>;
-
   /// Access the element given by key and assign the value to it and return true
   /// if it exists. Otherwise, do nothing and return false.
   template <generic::forwardable<mapped_type> V>
-  bool assign(const key_type& key, V&& value);
+  void assign(const key_type& key, V&& value);
 
   /// Insert an element if it not already exists.
   /// Otherwise, assign a new value to it.
   template <generic::forwardable<key_type>    K,
             generic::forwardable<mapped_type> V>
-  bool insert_or_assign(K&& key, V&& value);
+  void insert_or_assign(K&& key, V&& value);
 
-  /// Insert or access the element given by key. If the key has already been
+  /// Insert or access the element given by the key. If the key has already been
   /// inserted, the functions returns a reference to its value. Otherwise, the
   /// key will be inserted with a default initialized value to which a reference
   /// is returned.
-  auto operator[](const key_type& key) -> mapped_type&  //
+  template <generic::forwardable<Key> K>
+  auto operator[](K&& key) -> mapped_type&  //
       requires std::default_initializable<mapped_type>;
 
   /// Checks if the given key has been inserted into the map.
@@ -332,9 +353,10 @@ class map {
   /// runnin over table size boundary.
   auto next(size_type index) const noexcept -> size_type;
 
-  /// Checks if the current load factor is bigger
-  /// than the maximum allowed load factor.
-  bool overloaded() const noexcept { return load >= max_load * table.size; }
+  /// Checks if the current number of elements is bigger or equal than the
+  /// maximum allowed number of elements based on the current maximum load
+  /// factor.
+  bool overloaded() const noexcept { return load >= max_load; }
 
   /// Assumes the given key has not already been inserted and computes table
   /// index and probe sequence length where Robin Hood swapping would have to be
@@ -354,6 +376,12 @@ class map {
   /// where the element has been inserted.
   template <generic::forward_reference<key_type> K>
   auto insert(K&& key, size_type index, psl_type psl) -> size_type;
+
+  template <generic::forwardable<key_type> K>
+  auto static_insert_key(K&& key) -> size_type;
+
+  template <generic::forwardable<key_type> K>
+  auto insert_key(K&& key) -> size_type;
 
   /// Directly sets the new size of the underlying table and rehashes all
   /// inserted elements into it. The function assumes that the given size is a
@@ -379,11 +407,13 @@ class map {
   allocator alloc{};
   /// Underlying table storing all elements.
   container table{8, alloc};
-  /// Count of elements inserted into the map.
-  size_type load{};
   /// Maximum allowed load factor
   // open_normalized<real>
-  real max_load{0.8};
+  real max_load_ratio{0.8};
+  /// Maximum allowed number of elements with current capacity
+  size_type max_load{6};
+  /// Count of elements inserted into the map.
+  size_type load{};
   // We need stats:
   // min, max index -> faster begin() and end()
   // min, max psl
