@@ -32,7 +32,7 @@ inline auto MAP::next(size_type index) const noexcept -> size_type {
 }
 
 TEMPLATE
-inline auto MAP::lookup_data(const key_type& key) const noexcept
+inline auto MAP::basic_lookup_data(const key_type& key) const noexcept
     -> std::tuple<size_type, psl_type, bool> {
   auto index = ideal_index(key);
   auto psl   = psl_type{1};
@@ -44,7 +44,7 @@ inline auto MAP::lookup_data(const key_type& key) const noexcept
 }
 
 TEMPLATE
-inline auto MAP::static_insert_data(const key_type& key) const noexcept
+inline auto MAP::basic_static_insert_data(const key_type& key) const noexcept
     -> std::pair<size_type, psl_type> {
   auto index = ideal_index(key);
   auto psl   = psl_type{1};
@@ -55,7 +55,7 @@ inline auto MAP::static_insert_data(const key_type& key) const noexcept
 
 TEMPLATE
 template <generic::forward_reference<Key> K>
-void MAP::static_insert(K&& key, size_type index, psl_type psl) {
+void MAP::basic_static_insert(K&& key, size_type index, psl_type psl) {
   // With this, we can use custom swap routines when they are defined as member
   // functions. Otherwise, we try to use the standard.
   using xstd::swap;
@@ -99,8 +99,8 @@ void MAP::set_capacity_and_rehash(size_type c) {
 
   for (size_type i = 0; i < old_table.size; ++i) {
     if (!old_table.psl[i]) continue;
-    const auto [index, psl] = static_insert_data(old_table.keys[i]);
-    static_insert(std::move(old_table.keys[i]), index, psl);
+    const auto [index, psl] = basic_static_insert_data(old_table.keys[i]);
+    basic_static_insert(std::move(old_table.keys[i]), index, psl);
     table.construct_value(index, std::move(old_table.values[i]));
   }
 }
@@ -112,15 +112,15 @@ void MAP::double_capacity_and_rehash() {
 
 TEMPLATE
 template <generic::forward_reference<Key> K>
-auto MAP::insert(K&& key, size_type index, psl_type psl) -> size_type {
+auto MAP::basic_insert(K&& key, size_type index, psl_type psl) -> size_type {
   if (overloaded()) {
     double_capacity_and_rehash();
-    const auto [i, p] = static_insert_data(key);
+    const auto [i, p] = basic_static_insert_data(key);
 
     index = i;
     psl   = p;
   }
-  static_insert(std::forward<K>(key), index, psl);
+  basic_static_insert(std::forward<K>(key), index, psl);
   return index;
 }
 
@@ -129,13 +129,13 @@ template <generic::forwardable<Key> K>
 auto MAP::static_insert_key(K&& key) -> size_type {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
+  auto [index, psl, found] = basic_lookup_data(k);
   if (found)
     throw std::invalid_argument(
         "Failed to insert element that already exists!");
   if (overloaded())
     throw std::overflow_error("Failed to statically insert given element!");
-  static_insert(std::forward<decltype(k)>(k), index, psl);
+  basic_static_insert(std::forward<decltype(k)>(k), index, psl);
   return index;
 }
 
@@ -144,11 +144,11 @@ template <generic::forwardable<Key> K>
 auto MAP::insert_key(K&& key) -> size_type {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
+  auto [index, psl, found] = basic_lookup_data(k);
   if (found)
     throw std::invalid_argument(
         "Failed to insert element that already exists!");
-  index = insert(std::forward<decltype(k)>(k), index, psl);
+  index = basic_insert(std::forward<decltype(k)>(k), index, psl);
   return index;
 }
 
@@ -226,12 +226,12 @@ template <generic::forwardable<Key> K, generic::forwardable<Value> V>
 void MAP::insert_or_assign(K&& key, V&& value) {
   // This makes sure key is constructed if it is not a direct forward reference.
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
+  auto [index, psl, found] = basic_lookup_data(k);
   if (found) {
     table.values[index] = std::forward<V>(value);
     return;
   }
-  index = insert(std::forward<decltype(k)>(k), index, psl);
+  index = basic_insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index, std::forward<V>(value));
 }
 
@@ -240,16 +240,16 @@ template <generic::forwardable<Key> K>
 auto MAP::operator[](K&& key) -> mapped_type&  //
     requires std::default_initializable<Value> {
   decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-  auto [index, psl, found] = lookup_data(k);
+  auto [index, psl, found] = basic_lookup_data(k);
   if (found) return table.values[index];
-  index = insert(std::forward<decltype(k)>(k), index, psl);
+  index = basic_insert(std::forward<decltype(k)>(k), index, psl);
   table.construct_value(index);
   return table.values[index];
 }
 
 TEMPLATE
 auto MAP::operator()(const key_type& key) -> mapped_type& {
-  const auto [index, psl, found] = lookup_data(key);
+  const auto [index, psl, found] = basic_lookup_data(key);
   if (found) return table.values[index];
   throw std::invalid_argument("Failed to find the given key.");
 }
@@ -267,7 +267,7 @@ void MAP::assign(const key_type& key, V&& value) {
 
 TEMPLATE
 auto MAP::lookup_iterator(const key_type& key) noexcept -> iterator {
-  const auto [index, psl, found] = lookup_data(key);
+  const auto [index, psl, found] = basic_lookup_data(key);
   if (found) return {&table, index};
   return end();
 }
@@ -275,19 +275,19 @@ auto MAP::lookup_iterator(const key_type& key) noexcept -> iterator {
 TEMPLATE
 auto MAP::lookup_iterator(const key_type& key) const noexcept
     -> const_iterator {
-  const auto [index, psl, found] = lookup_data(key);
+  const auto [index, psl, found] = basic_lookup_data(key);
   if (found) return {&table, index};
   return end();
 }
 
 TEMPLATE
 inline bool MAP::contains(const key_type& key) const noexcept {
-  const auto [index, psl, found] = lookup_data(key);
+  const auto [index, psl, found] = basic_lookup_data(key);
   return found;
 }
 
 TEMPLATE
-void MAP::erase_and_move(size_type index) {
+void MAP::basic_erase(size_type index) {
   auto next_index = next(index);
   while (table.psl[next_index] > 1) {
     table.keys[index]   = std::move(table.keys[next_index]);
@@ -303,20 +303,20 @@ void MAP::erase_and_move(size_type index) {
 
 TEMPLATE
 bool MAP::erase(const key_type& key) {
-  const auto [index, psl, found] = lookup_data(key);
+  const auto [index, psl, found] = basic_lookup_data(key);
   if (!found) return false;
-  erase_and_move(index);
+  basic_erase(index);
   return true;
 }
 
 TEMPLATE
 void MAP::erase(iterator it) {
-  erase_and_move(it.index);
+  basic_erase(it.index);
 }
 
 TEMPLATE
 void MAP::erase(const_iterator it) {
-  erase_and_move(it.index);
+  basic_erase(it.index);
 }
 
 TEMPLATE

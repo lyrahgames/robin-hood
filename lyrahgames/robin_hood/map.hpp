@@ -166,13 +166,6 @@ class map {
   /// Return a constant iterator to the end of the map.
   auto end() const noexcept -> const_iterator { return table.end(); }
 
-  /// If the key is contained in the map then this function returns its index,
-  /// probe sequence length, and 'true'. Otherwise, it would return the index
-  /// where it would have to be inserted with the according probe sequence
-  /// length and 'false'.
-  auto lookup_data(const key_type& key) const noexcept
-      -> std::tuple<size_type, psl_type, bool>;
-
   /// Create an iterator pointing to an element with the given key.
   /// If this is not possible, return the end iterator.
   auto lookup_iterator(const key_type& key) noexcept -> iterator;
@@ -344,6 +337,13 @@ class map {
   // friend std::ostream& operator<<(std::ostream&             os,
   //                                 const map<K, M, H, E, A>& m);
 
+  /// If the key is contained in the map then this function returns its index,
+  /// probe sequence length, and 'true'. Otherwise, it would return the index
+  /// where it would have to be inserted with the according probe sequence
+  /// length and 'false'.
+  auto basic_lookup_data(const key_type& key) const noexcept
+      -> std::tuple<size_type, psl_type, bool>;
+
  private:
   /// Returns the ideal table index of a given key
   /// when no collision would occur.
@@ -361,7 +361,7 @@ class map {
   /// Assumes the given key has not already been inserted and computes table
   /// index and probe sequence length where Robin Hood swapping would have to be
   /// started.
-  auto static_insert_data(const key_type& key) const noexcept
+  auto basic_static_insert_data(const key_type& key) const noexcept
       -> std::pair<size_type, psl_type>;
 
   /// Inserts a new key in the map by using Robin Hood swapping algorithm.
@@ -369,13 +369,13 @@ class map {
   /// and that capacity is big enough such that map will not be overloaded.
   // void static_insert(const key_type& key, size_type index, psl_type psl);
   template <generic::forward_reference<key_type> K>
-  void static_insert(K&& key, size_type index, psl_type psl);
+  void basic_static_insert(K&& key, size_type index, psl_type psl);
 
   /// Assumes the key has not been inserted and inserts it by possibly changing
   /// the capacity of the underlying table. The function returns the index
   /// where the element has been inserted.
   template <generic::forward_reference<key_type> K>
-  auto insert(K&& key, size_type index, psl_type psl) -> size_type;
+  auto basic_insert(K&& key, size_type index, psl_type psl) -> size_type;
 
   template <generic::forwardable<key_type> K>
   auto static_insert_key(K&& key) -> size_type;
@@ -395,7 +395,7 @@ class map {
   /// Erase the element at the given table index and move the subsequent
   /// elements one step back. Abort this when an element with probe sequence
   /// length of '1' occurs.
-  void erase_and_move(size_type index);
+  void basic_erase(size_type index);
 
  private:
   // State

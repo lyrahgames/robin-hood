@@ -872,7 +872,7 @@ SCENARIO("robin_hood::map: Printing the Map State") {
   //     cout << setw(15) << key << setw(15) << value << '\n';
 }
 
-SCENARIO("robin_hood::map::lookup_data: Lookup Statistics for Key Type") {
+SCENARIO("robin_hood::map::basic_lookup_data: Lookup Statistics for Key Type") {
   GIVEN("a map with a key type able to log its usage and some elements") {
     // State to compare the log of log_value against.
     struct log::state state {};
@@ -886,7 +886,7 @@ SCENARIO("robin_hood::map::lookup_data: Lookup Statistics for Key Type") {
       const auto keys = std::initializer_list<log_value>{1, 2, 9, 0, 8, 5};
       for (auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = map.lookup_data(key);
+        const auto [index, psl, found] = map.basic_lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
@@ -906,7 +906,7 @@ SCENARIO("robin_hood::map::lookup_data: Lookup Statistics for Key Type") {
       const auto keys = std::initializer_list<log_value>{3, 7, 18};
       for (auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = map.lookup_data(key);
+        const auto [index, psl, found] = map.basic_lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
