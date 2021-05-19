@@ -514,9 +514,8 @@ SCENARIO(
     CHECK(map.size() == 5);
 
     WHEN("erasing a non-existing key") {
-      const auto done = map.erase("sixth");
       THEN("nothing is done at all.") {
-        CHECK(!done);
+        CHECK_THROWS_AS(map.erase("sixth"), std::invalid_argument);
         CHECK(map.size() == 5);
         CHECK(map("first") == 1);
         CHECK(map("second") == 2);
@@ -527,9 +526,9 @@ SCENARIO(
     }
 
     WHEN("erasing an existing key") {
-      const auto done = map.erase("first");
+      map.erase("first");
+
       THEN("the element with the according key is erased from the map.") {
-        CHECK(done);
         CHECK(map.size() == 4);
         CHECK_THROWS_AS(map("first"), std::invalid_argument);
         CHECK(map("second") == 2);

@@ -283,18 +283,18 @@ class map {
   /// Checks if the given key has been inserted into the map.
   bool contains(const key_type& key) const noexcept;
 
-  /// If the given key has been inserted, remove the element with the given key
-  /// and return 'true'. Otherwise, do nothing and return 'false'.
-  bool erase(const key_type& key);
+  /// If the given key has been inserted, remove the element with the given key.
+  /// Otherwise, throw an exception of type 'std::invalid_argument'.
+  void erase(const key_type& key);
 
   /// Erase the element inside the map pointed to by the given iterator.
-  /// The function assumes the iterator points to an existent element inside the
-  /// map.
+  /// The function assumes the iterator points to an existing element
+  /// inside the map.
   void erase(iterator it);
 
   /// Erase the element inside the map pointed to by the given iterator.
-  /// The function assumes the iterator points to an existent element inside the
-  /// map.
+  /// The function assumes the iterator points to an existing element
+  /// inside the map.
   void erase(const_iterator it);
 
   /// Reserves enough memory in the underlying table by creating a new temporary
@@ -337,13 +337,6 @@ class map {
   // friend std::ostream& operator<<(std::ostream&             os,
   //                                 const map<K, M, H, E, A>& m);
 
-  /// If the key is contained in the map then this function returns its index,
-  /// probe sequence length, and 'true'. Otherwise, it would return the index
-  /// where it would have to be inserted with the according probe sequence
-  /// length and 'false'.
-  auto basic_lookup_data(const key_type& key) const noexcept
-      -> std::tuple<size_type, psl_type, bool>;
-
  private:
   /// Returns the ideal table index of a given key
   /// when no collision would occur.
@@ -358,6 +351,15 @@ class map {
   /// factor.
   bool overloaded() const noexcept { return load >= max_load; }
 
+ public:
+  /// If the key is contained in the map then this function returns its index,
+  /// probe sequence length, and 'true'. Otherwise, it would return the index
+  /// where it would have to be inserted with the according probe sequence
+  /// length and 'false'.
+  auto basic_lookup_data(const key_type& key) const noexcept
+      -> std::tuple<size_type, psl_type, bool>;
+
+ private:
   /// Assumes the given key has not already been inserted and computes table
   /// index and probe sequence length where Robin Hood swapping would have to be
   /// started.

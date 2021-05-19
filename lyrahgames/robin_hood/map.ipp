@@ -302,20 +302,21 @@ void MAP::basic_erase(size_type index) {
 }
 
 TEMPLATE
-bool MAP::erase(const key_type& key) {
+void MAP::erase(const key_type& key) {
   const auto [index, psl, found] = basic_lookup_data(key);
-  if (!found) return false;
+  if (!found) throw std::invalid_argument("Failed to erase non-existing key!");
   basic_erase(index);
-  return true;
 }
 
 TEMPLATE
 void MAP::erase(iterator it) {
+  assert((it.base == &table) && table.valid(it.index));
   basic_erase(it.index);
 }
 
 TEMPLATE
 void MAP::erase(const_iterator it) {
+  assert((it.base == &table) && table.valid(it.index));
   basic_erase(it.index);
 }
 
