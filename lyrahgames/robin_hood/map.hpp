@@ -151,7 +151,8 @@ class map {
 
   /// Sets the maximum load factor the map is allowed to have before
   /// rehashing all elements with a bigger capacity.
-  // real -> open_normalized<real>
+  /// Setting the maximum load factor to smaller value, may trigger a
+  /// reallocation and rehashing of all contained values.
   void set_max_load_factor(real x);
 
   /// Return an iterator to the beginning of the map.
@@ -349,7 +350,9 @@ class map {
   /// Checks if the current number of elements is bigger or equal than the
   /// maximum allowed number of elements based on the current maximum load
   /// factor.
-  bool overloaded() const noexcept { return load >= max_load; }
+  bool overloaded() const noexcept {
+    return load >= size_type(std::floor(max_load_ratio * table.size));
+  }
 
  public:
   /// If the key is contained in the map then this function returns its index,
@@ -388,7 +391,7 @@ class map {
   /// Directly sets the new size of the underlying table and rehashes all
   /// inserted elements into it. The function assumes that the given size is a
   /// positive power of two.
-  void reallocate_and_rehash(size_type size);
+  void basic_reallocate_and_rehash(size_type size);
 
   /// Doubles the amount of allocated space of the underlying table and inserts
   /// all elements again.
@@ -400,6 +403,7 @@ class map {
   void basic_erase(size_type index);
 
  private:
+  static constexpr size_type min_capacity = 8;
   // State
   /// Functor used to compute the hash of keys.
   hasher hash{};
@@ -408,12 +412,10 @@ class map {
   /// Allocator of the underlying table.
   allocator alloc{};
   /// Underlying table storing all elements.
-  container table{8, alloc};
+  container table{min_capacity, alloc};
   /// Maximum allowed load factor
   // open_normalized<real>
   real max_load_ratio{0.8};
-  /// Maximum allowed number of elements with current capacity
-  size_type max_load{6};
   /// Count of elements inserted into the map.
   size_type load{};
   // We need stats:

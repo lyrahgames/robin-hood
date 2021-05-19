@@ -963,6 +963,7 @@ SCENARIO(
         {"first", 0}, {"second", 1}, {"third", 2}, {"fourth", 3}};
     map.set_max_load_factor(0.5);
     CAPTURE(map);
+    CAPTURE(map.max_load_factor());
 
     CHECK(map.capacity() == 8);
     CHECK(map.size() == 4);

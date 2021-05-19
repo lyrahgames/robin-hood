@@ -13,13 +13,6 @@ namespace lyrahgames::robin_hood {
 #define MAP map<Key, Value, Hasher, Equality, Allocator>
 
 TEMPLATE
-void MAP::set_max_load_factor(real x) {
-  assert((x > 0) || (x < 1));
-  max_load_ratio = x;
-  max_load       = std::floor(max_load_ratio * table.size);
-}
-
-TEMPLATE
 inline auto MAP::ideal_index(const key_type& key) const noexcept -> size_type {
   const auto mask = table.size - size_type{1};
   return hash(key) & mask;
@@ -90,12 +83,11 @@ void MAP::basic_static_insert(K&& key, size_type index, psl_type psl) {
 }
 
 TEMPLATE
-void MAP::reallocate_and_rehash(size_type c) {
+void MAP::basic_reallocate_and_rehash(size_type c) {
   container old_table{c, alloc};
 
   table.swap(old_table);
-  load     = 0;
-  max_load = std::floor(max_load_ratio * table.size);
+  load = 0;
 
   for (size_type i = 0; i < old_table.size; ++i) {
     if (!old_table.psl[i]) continue;
@@ -107,7 +99,31 @@ void MAP::reallocate_and_rehash(size_type c) {
 
 TEMPLATE
 void MAP::double_capacity_and_rehash() {
-  reallocate_and_rehash(table.size << 1);
+  basic_reallocate_and_rehash(table.size << 1);
+}
+
+TEMPLATE
+void MAP::reserve_capacity(size_type size) {
+  size = std::max(min_capacity, size);
+  if (size <= table.size) return;
+  size = ceil_pow2(size);
+  basic_reallocate_and_rehash(size);
+}
+
+TEMPLATE
+void MAP::reserve(size_type count) {
+  count = std::ceil(count / max_load_ratio);
+  reserve_capacity(count);
+}
+
+TEMPLATE
+void MAP::set_max_load_factor(real x) {
+  assert((x > 0) || (x < 1));
+  max_load_ratio = x;
+  // Reserve capacity for the number of inserted elements
+  // or at least one element.
+  // reserve(load ? load : 1);
+  reserve(std::max(load, size_t(1)));
 }
 
 TEMPLATE
@@ -321,21 +337,6 @@ void MAP::erase(const_iterator it) {
 }
 
 TEMPLATE
-void MAP::reserve_capacity(size_type size) {
-  if (size <= table.size) return;
-  const auto new_size = ceil_pow2(size);
-  reallocate_and_rehash(new_size);
-}
-
-TEMPLATE
-void MAP::reserve(size_type count) {
-  count = std::ceil(count / max_load_ratio);
-  if (count <= table.size) return;
-  const auto new_size = ceil_pow2(count);
-  reallocate_and_rehash(new_size);
-}
-
-TEMPLATE
 void MAP::clear() {
   load = 0;
   for (size_type i = 0; i < table.size; ++i)
@@ -360,7 +361,7 @@ void MAP::insert(T first, T last, U v) {
 
 TEMPLATE
 MAP::map(size_type s, const hasher& h, const equality& e, const allocator& a)
-    : hash{h}, equal{e}, alloc{a} {
+    : hash{h}, equal{e}, alloc{a}, table{} {
   reserve(s);
 }
 
