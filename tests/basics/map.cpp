@@ -411,12 +411,12 @@ SCENARIO("robin_hood::map::lookup_iterator: Accessing Elements by Iterator") {
   }
 }
 
-SCENARIO("robin_hood::map:reserve: Reserving Memory") {
+SCENARIO("robin_hood::map:reserve_capacity: Reserving Memory") {
   GIVEN("a default map") {
     robin_hood::map<int, int> map{};
     CHECK(map.capacity() == 8);
     WHEN("reserving more space than available capacity") {
-      map.reserve(10);
+      map.reserve_capacity(10);
       THEN(
           "the next bigger or equal power of two will be chosen as the new "
           "capacity of the underlying table. In this case, reallocation and "
@@ -426,7 +426,7 @@ SCENARIO("robin_hood::map:reserve: Reserving Memory") {
       }
     }
     WHEN("reserving less space than available capacity") {
-      map.reserve(7);
+      map.reserve_capacity(7);
       THEN("nothing will happen.") { CHECK(map.capacity() == 8); }
     }
   }
@@ -722,7 +722,7 @@ SCENARIO("robin_hood::map::clear: Clear all Elements") {
     robin_hood::map<int, int> map{{1, 1}, {2, 2}, {3, 3}};
     CAPTURE(map);
 
-    map.reserve(16);
+    map.reserve_capacity(16);
     CHECK(map.capacity() == 16);
     CHECK(map.size() == 3);
     CHECK(map(1) == 1);
@@ -931,7 +931,7 @@ SCENARIO(
     CAPTURE(map);
 
     map.set_max_load_factor(0.5);
-    map.reserve(8);
+    map.reserve_capacity(8);
 
     CHECK(map.capacity() == 8);
     CHECK(map.size() == 0);
@@ -1019,7 +1019,7 @@ SCENARIO("robin_hood::map::static_insert: Statistics for Key Type") {
           ++x.log.state.counters[x.log.state.hash_calls];
           return x.value;
         });
-    map.reserve(16);
+    map.reserve_capacity(16);
     CAPTURE(map);
 
     WHEN("statically inserting elements without collision by lvalue") {
@@ -1123,7 +1123,7 @@ SCENARIO("robin_hood::map::static_insert: Statistics for Key Type") {
           ++x.log.state.counters[x.log.state.hash_calls];
           return x.value;
         });
-    map.reserve(16);
+    map.reserve_capacity(16);
     CAPTURE(map);
 
     WHEN("statically inserting elements with one collision by lvalue") {

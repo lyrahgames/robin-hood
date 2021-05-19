@@ -302,12 +302,12 @@ class map {
   /// elements into it, and swapping its content with the actual table.
   /// In this case, all iterators and pointers become invalid.
   /// If the given size is smaller than the current table size, nothing happens.
-  void reserve(size_type size);
+  void reserve_capacity(size_type size);
 
   /// Reserves enough memory in the underlying table such that 'count' elements
   /// could be inserted without implicitly triggering a rehash with respect to
-  /// the current maximum allowed load factor. @see reserve
-  void rehash(size_type count);
+  /// the current maximum allowed load factor. @see reserve_capacity
+  void reserve(size_type count);
 
   void clear();
 
@@ -388,7 +388,7 @@ class map {
   /// Directly sets the new size of the underlying table and rehashes all
   /// inserted elements into it. The function assumes that the given size is a
   /// positive power of two.
-  void set_capacity_and_rehash(size_type size);
+  void reallocate_and_rehash(size_type size);
 
   /// Doubles the amount of allocated space of the underlying table and inserts
   /// all elements again.

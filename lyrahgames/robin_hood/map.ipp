@@ -90,7 +90,7 @@ void MAP::basic_static_insert(K&& key, size_type index, psl_type psl) {
 }
 
 TEMPLATE
-void MAP::set_capacity_and_rehash(size_type c) {
+void MAP::reallocate_and_rehash(size_type c) {
   container old_table{c, alloc};
 
   table.swap(old_table);
@@ -107,7 +107,7 @@ void MAP::set_capacity_and_rehash(size_type c) {
 
 TEMPLATE
 void MAP::double_capacity_and_rehash() {
-  set_capacity_and_rehash(table.size << 1);
+  reallocate_and_rehash(table.size << 1);
 }
 
 TEMPLATE
@@ -321,18 +321,18 @@ void MAP::erase(const_iterator it) {
 }
 
 TEMPLATE
-void MAP::reserve(size_type size) {
+void MAP::reserve_capacity(size_type size) {
   if (size <= table.size) return;
   const auto new_size = ceil_pow2(size);
-  set_capacity_and_rehash(new_size);
+  reallocate_and_rehash(new_size);
 }
 
 TEMPLATE
-void MAP::rehash(size_type count) {
+void MAP::reserve(size_type count) {
   count = std::ceil(count / max_load_ratio);
   if (count <= table.size) return;
   const auto new_size = ceil_pow2(count);
-  set_capacity_and_rehash(new_size);
+  reallocate_and_rehash(new_size);
 }
 
 TEMPLATE
@@ -348,7 +348,6 @@ void MAP::insert(T first, T last) {
   for (auto it = first; it != last; ++it) {
     const auto& [key, value] = *it;
     insert_or_assign(key, value);
-    // operator[](key) = value;
   }
 }
 
@@ -357,13 +356,12 @@ template <generic::input_iterator<Key> T, generic::input_iterator<Value> U>
 void MAP::insert(T first, T last, U v) {
   for (auto it = first; it != last; ++it, ++v)
     insert_or_assign(*it, *v);
-  // operator[](*it) = *v;
 }
 
 TEMPLATE
 MAP::map(size_type s, const hasher& h, const equality& e, const allocator& a)
     : hash{h}, equal{e}, alloc{a} {
-  rehash(s);
+  reserve(s);
 }
 
 TEMPLATE
