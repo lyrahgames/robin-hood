@@ -181,44 +181,6 @@ SCENARIO("robin_hood::map::operator[]: Insert or Access Elements") {
   }
 }
 
-// TEST_CASE("A robin_hood::map") {
-//   robin_hood::map<int, int> map{};
-//   using real = decltype(map)::real;
-
-//   mt19937 rng{random_device{}()};
-
-//   CHECK(map.empty());
-//   CHECK(map.size() == 0);
-//   CHECK(map.capacity() >= 8);
-//   CHECK(map.load_factor() == 0);
-
-//   map.set_max_load_factor(real(0.5));
-
-//   CHECK(map.max_load_factor() == real(0.5));
-
-//   SUBCASE("will rehash the values if the load factor is too big.") {
-//     map.set_max_load_factor(0.7);
-//     CHECK(map.max_load_factor() == 0.7);
-
-//     CHECK(map.size() == 0);
-//     CHECK(map.load_factor() == 0.0f);
-
-//     const auto old_capacity = map.capacity();
-//     while (map.capacity() == old_capacity) {
-//       map[rng()] = rng();
-//       CHECK(map.load_factor() < map.max_load_factor());
-
-//       // cout << "{ ";
-//       // for (auto [k, v] : map)
-//       //   cout << "(" << k << ", " << v << ") ";
-//       // cout << "}\n";
-//     }
-
-//     CHECK(map.load_factor() < map.max_load_factor());
-//     CHECK(map.capacity() == 2 * old_capacity);
-//   }
-// }
-
 SCENARIO("robin_hood::map::insert: Insertion by Using Iterators") {
   GIVEN("a default map") {
     robin_hood::map<int, int> map{};
@@ -1307,5 +1269,95 @@ SCENARIO("robin_hood::auto_map") {
     CHECK(map.size() == 2);
     CHECK(map("first") == 1);
     CHECK(map("second") == 2);
+  }
+}
+
+SCENARIO("robin_hood::map: unique_ptr as Value Types") {
+  random_device rng{};
+  vector<int>   keys{};
+  int           n = 24;
+
+  GIVEN("an empty map with 'unique_ptr' as value type") {
+    robin_hood::map<int, unique_ptr<int>> map{};
+    CAPTURE(map);
+
+    THEN("unique pointers can be inserted by using move.") {
+      for (int i = 0; i < n; ++i) {
+        const auto rnd = rng();
+        // Manage doubled keys.
+        try {
+          map.insert(rnd, make_unique<int>(i));
+        } catch (std::invalid_argument&) {
+          continue;
+        }
+        keys.push_back(rnd);
+      }
+      n = keys.size();
+
+      CHECK(map.size() == n);
+      for (int i = 0; i < n; ++i) {
+        CHECK(map.contains(keys[i]));
+        CHECK(*map(keys[i]) == i);
+      }
+
+      THEN("new values can be assigned through the function operator.") {
+        vector<int> values(n);
+        for (int i = 0; i < n; ++i) {
+          const auto rnd = rng();
+          map(keys[i])   = make_unique<int>(rnd);
+          values[i]      = rnd;
+        }
+
+        CHECK(map.size() == n);
+        for (int i = 0; i < n; ++i)
+          CHECK(*map(keys[i]) == values[i]);
+
+        THEN("erasing some elements ís possible.") {
+          for (int i = 0; i < n / 2; ++i)
+            map.erase(keys[i]);
+
+          CHECK(map.size() == (n - n / 2));
+          for (int i = 0; i < n / 2; ++i) {
+            CHECK(!map.contains(keys[i]));
+            CHECK_THROWS_AS(map(keys[i]), invalid_argument);
+          }
+          for (int i = n / 2; i < n; ++i) {
+            CHECK(map.contains(keys[i]));
+            CHECK(*map(keys[i]) == values[i]);
+          }
+
+          THEN(
+              "by using the subscript operator values can be inserted or "
+              "assigned by using move assignments.") {
+            for (int i = 0; i < n; ++i) {
+              const auto rnd = rng();
+              map[keys[i]]   = make_unique<int>(rnd);
+              values[i]      = rnd;
+            }
+
+            CHECK(map.size() == keys.size());
+            for (int i = 0; i < n; ++i) {
+              CHECK(map.contains(keys[i]));
+              CHECK(*map(keys[i]) == values[i]);
+            }
+
+            THEN("using swap allows to get back the ownership.") {
+              for (int i = 0; i < n; ++i) {
+                const auto rnd = rng();
+                auto       tmp = make_unique<int>(rnd);
+                swap(map(keys[i]), tmp);
+                values[i] = rnd;
+              }
+
+              CHECK(map.size() == keys.size());
+              for (int i = 0; i < n; ++i) {
+                CHECK(map.contains(keys[i]));
+                CHECK(*map(keys[i]) == values[i]);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

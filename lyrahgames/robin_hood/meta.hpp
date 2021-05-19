@@ -16,8 +16,10 @@ using namespace lyrahgames::xstd::generic;
 template <typename T>
 concept value = std::destructible<T>&& std::movable<T>&& irreducible<T>;
 
+// Keys need to be copyable. Otherwise, we are not able to do any lookups based
+// on semantics even if the syntax would allow this.
 template <typename T>
-concept key = value<T>;
+concept key = value<T>&& std::copyable<T>;
 
 template <typename F, typename T>
 concept hasher = irreducible<T>&& callable<F>&&
