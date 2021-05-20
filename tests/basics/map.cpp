@@ -1361,3 +1361,19 @@ SCENARIO("robin_hood::map: unique_ptr as Value Types") {
     }
   }
 }
+
+SCENARIO("robin_hood::map::insert: Using Ranges for Insertion") {
+  GIVEN("an empty map") {
+    robin_hood::map<int, int> map{};
+
+    WHEN("") {
+      map.insert(
+          vector<pair<int, int>>{{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}});
+      CHECK(map(1) == 1);
+      CHECK(map(2) == 2);
+      CHECK(map(3) == 3);
+      CHECK(map(4) == 4);
+      CHECK(map(5) == 5);
+    }
+  }
+}

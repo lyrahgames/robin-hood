@@ -262,6 +262,11 @@ class map {
             generic::input_iterator<mapped_type> U>
   void insert(T first, T last, U v);
 
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  void insert(const T& data) {
+    insert(std::ranges::begin(data), std::ranges::end(data));
+  }
+
   /// Access the element given by key and assign the value to it and return true
   /// if it exists. Otherwise, do nothing and return false.
   template <generic::forwardable<mapped_type> V>

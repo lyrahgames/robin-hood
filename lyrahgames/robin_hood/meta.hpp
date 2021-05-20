@@ -1,6 +1,7 @@
 #pragma once
 #include <concepts>
 #include <iterator>
+#include <ranges>
 //
 #include <lyrahgames/xstd/forward.hpp>
 #include <lyrahgames/xstd/meta.hpp>
@@ -53,6 +54,12 @@ concept input_iterator = std::input_iterator<T>&&  //
     requires(T it, K& k) {
   { k = *it }
   ->identical<K&>;
+};
+
+template <typename T, typename K, typename V>
+concept pair_input_range = std::ranges::input_range<T>&&  //
+    requires(std::ranges::range_value_t<T>& r, K& k, V& v) {
+  std::tie(k, v) = r;
 };
 
 }  // namespace generic
