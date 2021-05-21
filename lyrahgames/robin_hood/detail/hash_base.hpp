@@ -1,4 +1,7 @@
 #pragma once
+#include <cassert>
+//
+#include <lyrahgames/xstd/math.hpp>
 
 namespace lyrahgames::robin_hood::detail {
 
