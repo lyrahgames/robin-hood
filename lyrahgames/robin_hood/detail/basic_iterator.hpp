@@ -11,7 +11,7 @@ struct basic_iterator {
   basic_iterator& operator++() noexcept {
     do {
       ++index;
-    } while ((index < base->size) && !base->valid(index));
+    } while ((index < base->size) && base->empty(index));
     return *this;
   }
 
@@ -49,13 +49,13 @@ struct basic_iterator_interface {
 
   auto begin() noexcept -> iterator {
     for (size_type i = 0; i < that()->size; ++i)
-      if (that()->valid(i)) return {that(), i};
+      if (!that()->empty(i)) return {that(), i};
     return {that(), that()->size};
   }
 
   auto begin() const noexcept -> const_iterator {
     for (size_type i = 0; i < that()->size; ++i)
-      if (that()->valid(i)) return {that(), i};
+      if (!that()->empty(i)) return {that(), i};
     return {that(), that()->size};
   }
 

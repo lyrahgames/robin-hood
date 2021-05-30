@@ -102,7 +102,7 @@ SCENARIO(
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
-            "hash function is called once and the number of equality "
+            " hash function is called once and the number of equality "
             "comparisons is equal to the probe sequence length of the given "
             "element in the set.") {
           CHECK(found);
@@ -150,6 +150,7 @@ SCENARIO("robin_hood::flat_set::static_insert: Statistics for Key Type") {
           return x.value;
         });
     CAPTURE(set);
+    CAPTURE(set.data());
 
     WHEN("statically inserting elements without collision by lvalue") {
       const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};

@@ -14,3 +14,5 @@ depends: * bpkg >= 0.13.0
 
 depends: lyrahgames-xstd >= 0.1.1
 depends: doctest ^ 2.4.0
+
+requires: c++20

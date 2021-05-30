@@ -70,8 +70,13 @@ class flat_map
   explicit flat_map(
       std::initializer_list<std::pair<key_type, mapped_type>> list) {
     reserve(list.size());
-    for (const auto& [k, v] : list)
-      static_insert(k, v);
+    for (const auto& [k, v] : list) {
+      try {
+        static_insert(k, v);
+      } catch (std::invalid_argument&) {
+        operator()(k) = v;
+      }
+    }
   }
 
   bool empty() const noexcept { return base::empty(); }
@@ -111,10 +116,47 @@ class flat_map
   }
 
   template <generic::pair_input_range<key_type, mapped_type> T>
-  void static_insert(const T& data) {
-    reserve(std::ranges::size(data));
-    for (const auto& [k, v] : data)
-      static_insert(k, v);
+  void insert(const T& data) {
+    reserve(std::ranges::size(data) + size());
+    for (const auto& [k, v] : data) {
+      try {
+        static_insert(k, v);
+      } catch (std::invalid_argument&) {
+      }
+    }
+  }
+
+  template <generic::input_range<key_type>    K,
+            generic::input_range<mapped_type> V>
+  void insert(const K& keys, const V& values) {
+    using namespace std;
+    assert(ranges::size(keys) == ranges::size(values));
+    reserve(ranges::size(keys) + size());
+    auto v = ranges::begin(values);
+    for (auto k = ranges::begin(keys); k != ranges::end(keys); ++k, ++v) {
+      try {
+        static_insert(*k, *v);
+      } catch (std::invalid_argument&) {
+      }
+    }
+  }
+
+  template <generic::forwardable<mapped_type> V>
+  void assign(const key_type& key, V&& value) {
+    operator()(key) = std::forward<V>(value);
+  }
+
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  void insert_or_assign(K&& key, V&& value) {
+    decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
+    auto [index, psl, found] = basic_lookup_data(k);
+    if (found) {
+      base::table.values[index] = std::forward<V>(value);
+      return;
+    }
+    index = basic_insert(index, psl, std::forward<decltype(k)>(k));
+    base::table.construct_value(index, std::forward<V>(value));
   }
 
   bool contains(const key_type& key) const noexcept {
@@ -131,6 +173,8 @@ class flat_map
 
   void reserve_capacity(size_type count) { base::reserve_capacity(count); }
 
+  void clear() { base::clear(); }
+
   auto lookup_iterator(const key_type& key) noexcept -> iterator {
     return base::lookup_iterator(key);
   }
@@ -145,7 +189,7 @@ class flat_map
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
     auto [index, psl, found] = basic_lookup_data(k);
     if (found) return base::table.values[index];
-    index = base::basic_insert(std::forward<decltype(k)>(k), index, psl);
+    index = base::basic_insert(index, psl, std::forward<decltype(k)>(k));
     base::table.construct_value(index);
     return base::table.values[index];
   }
@@ -164,6 +208,7 @@ class flat_map
 TEMPLATE
 inline std::ostream& operator<<(std::ostream& os, const FLAT_MAP& m) {
   using namespace std;
+  if (m.empty()) return os << "{}";
   auto it            = m.begin();
   const auto& [k, v] = *it;
   os << "{ "

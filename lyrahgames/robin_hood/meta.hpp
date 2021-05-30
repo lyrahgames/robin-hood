@@ -62,6 +62,10 @@ concept pair_input_range = std::ranges::input_range<T>&&  //
   std::tie(k, v) = r;
 };
 
+template <typename T, typename K>
+concept input_range = std::ranges::input_range<T>&&  //
+    generic::forwardable<std::ranges::range_value_t<T>, K>;
+
 }  // namespace generic
 
 }  // namespace lyrahgames::robin_hood

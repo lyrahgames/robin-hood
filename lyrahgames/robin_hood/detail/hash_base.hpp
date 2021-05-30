@@ -54,32 +54,45 @@ struct hash_base {
     return {index, psl};
   }
 
+  void prepare_insert(size_type index) {
+    auto p = table.psl[index] + psl_type{1};
+    auto i = next(index);
+    for (; !table.empty(i); ++p) {
+      if (p > table.psl[i]) {
+        table.swap(i, index);
+        swap(p, table.psl[i]);
+      }
+      i = next(i);
+    }
+    table.psl[i] = p;
+    table.move_construct(i, index);
+  }
+
   template <generic::forward_reference<key_type> K>
-  void basic_static_insert(K&& key, size_type index, psl_type psl) {
+  void basic_static_insert(size_type index, psl_type psl, K&& key) {
     ++load;
 
-    if (!table.psl[index]) {
+    if (table.empty(index)) {
       table.psl[index] = psl;
       table.construct_key(index, std::forward<K>(key));
       return;
     }
-
-    auto tmp          = table.extraction(index);
+    prepare_insert(index);
+    table.psl[index]  = psl;
     table.keys[index] = std::forward<K>(key);
-    std::swap(psl, table.psl[index]);
-    ++psl;
-    index = next(index);
+  }
 
-    for (; table.psl[index]; ++psl) {
-      if (psl > table.psl[index]) {
-        std::swap(psl, table.psl[index]);
-        table.swap(index, tmp);
-      }
-      index = next(index);
+  void basic_static_insert(size_type index, psl_type psl, iterator it) {
+    ++load;
+
+    if (table.empty(index)) {
+      table.psl[index] = psl;
+      table.move_construct(index, it);
+      return;
     }
-
-    table.construct(index, std::move(tmp));
+    prepare_insert(index);
     table.psl[index] = psl;
+    table.move_assign(index, it);
   }
 
   void basic_reallocate_and_rehash(size_type c) {
@@ -89,11 +102,23 @@ struct hash_base {
     load = 0;
 
     for (size_type i = 0; i < old_table.size; ++i) {
-      if (!old_table.psl[i]) continue;
+      if (old_table.empty(i)) continue;
       const auto [index, psl] = basic_static_insert_data(old_table.keys[i]);
-      basic_static_insert(std::move(old_table.keys[i]), index, psl);
-      // table.construct_value(index, std::move(old_table.values[i]));
+      basic_static_insert(index, psl, old_table.index_iterator(i));
     }
+  }
+
+  void basic_remove(size_type index) {
+    auto next_index = next(index);
+    while (table.psl[next_index] > 1) {
+      table.move(index, next_index);
+      table.psl[index] = table.psl[next_index] - 1;
+
+      index      = next_index;
+      next_index = next(next_index);
+    }
+    table.destroy(index);
+    --load;
   }
 
   void double_capacity_and_rehash() {
@@ -122,7 +147,7 @@ struct hash_base {
   }
 
   template <generic::forward_reference<key_type> K>
-  auto basic_insert(K&& key, size_type index, psl_type psl) -> size_type {
+  auto basic_insert(size_type index, psl_type psl, K&& key) -> size_type {
     if (overloaded()) {
       double_capacity_and_rehash();
       const auto [i, p] = basic_static_insert_data(key);
@@ -130,7 +155,7 @@ struct hash_base {
       index = i;
       psl   = p;
     }
-    basic_static_insert(std::forward<K>(key), index, psl);
+    basic_static_insert(index, psl, std::forward<K>(key));
     return index;
   }
 
@@ -145,7 +170,7 @@ struct hash_base {
           "Failed to insert element that already exists!");
     if (overloaded())
       throw std::overflow_error("Failed to statically insert given element!");
-    basic_static_insert(std::forward<decltype(k)>(k), index, psl);
+    basic_static_insert(index, psl, std::forward<decltype(k)>(k));
     return index;
   }
 
@@ -158,21 +183,8 @@ struct hash_base {
     if (found)
       throw std::invalid_argument(
           "Failed to insert element that already exists!");
-    index = basic_insert(std::forward<decltype(k)>(k), index, psl);
+    index = basic_insert(index, psl, std::forward<decltype(k)>(k));
     return index;
-  }
-
-  void basic_remove(size_type index) {
-    auto next_index = next(index);
-    while (table.psl[next_index] > 1) {
-      table.move(index, next_index);
-      table.psl[index] = table.psl[next_index] - 1;
-
-      index      = next_index;
-      next_index = next(next_index);
-    }
-    table.destroy(index);
-    --load;
   }
 
   void remove(const key_type& key) {
@@ -217,6 +229,11 @@ struct hash_base {
     const auto [index, psl, found] = basic_lookup_data(key);
     if (found) return {&table, index};
     return table.end();
+  }
+
+  void clear() {
+    load = 0;
+    table.clear();
   }
 
   container table{8, allocator{}};

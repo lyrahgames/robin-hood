@@ -134,6 +134,7 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
 TEMPLATE
 std::ostream& operator<<(std::ostream& os, const FLAT_SET& s) {
   using namespace std;
+  if (s.empty()) return os << "{}";
   auto it = s.begin();
   os << "{ " << *it++;
   for (; it != s.end(); ++it)
