@@ -312,18 +312,17 @@ SCENARIO("robin_hood::flat_map::insert: Insertion by Using Iterators") {
   }
 }
 
-SCENARIO(
-    "robin_hood::flat_map::lookup_iterator: Accessing Elements by Iterator") {
+SCENARIO("robin_hood::flat_map::lookup: Accessing Elements by Iterator") {
   GIVEN("a map with some elements") {
     robin_hood::flat_map<int, int> map{
         {1, 1}, {2, 2}, {4, 4}, {5, 5}, {10, 10}};
 
-    WHEN("'lookup_iterator' is used on existing keys") {
+    WHEN("'lookup' is used on existing keys") {
       const auto keys = {1, 2, 4, 5, 10};
       int        i    = 0;
       for (auto key : keys) {
         ++i;
-        const auto it = map.lookup_iterator(key);
+        const auto it = map.lookup(key);
 
         THEN("an iterator is returned referencing the respective element.") {
           const auto& [k, v] = *it;
@@ -333,10 +332,10 @@ SCENARIO(
       }
     }
 
-    WHEN("'lookup_iterator' is used on non-existing keys") {
+    WHEN("'lookup' is used on non-existing keys") {
       const auto keys = {-1, -2, 11, 13, 8};
       for (auto key : keys) {
-        const auto it = map.lookup_iterator(key);
+        const auto it = map.lookup(key);
 
         THEN("the end iterator is returned.") {
           CHECK(it == map.end());
@@ -348,12 +347,12 @@ SCENARIO(
     GIVEN("a constant reference to this map") {
       const auto& m = map;
 
-      WHEN("'lookup_iterator' is used on existing keys") {
+      WHEN("'lookup' is used on existing keys") {
         const auto keys = {1, 2, 4, 5, 10};
         int        i    = 0;
         for (auto key : keys) {
           ++i;
-          const auto it = m.lookup_iterator(key);
+          const auto it = m.lookup(key);
 
           THEN("an iterator is returned referencing the respective element.") {
             const auto [k, v] = *it;
@@ -363,10 +362,10 @@ SCENARIO(
         }
       }
 
-      WHEN("'lookup_iterator' is used on non-existing keys") {
+      WHEN("'lookup' is used on non-existing keys") {
         const auto keys = {-1, -2, 11, 13, 8};
         for (auto key : keys) {
-          const auto it = m.lookup_iterator(key);
+          const auto it = m.lookup(key);
 
           THEN("the end iterator is returned.") {
             CHECK(it == m.end());
@@ -482,7 +481,7 @@ SCENARIO(
     }
 
     GIVEN("an iterator to an element inside the map") {
-      auto it = map.lookup_iterator("second");
+      auto it = map.lookup("second");
       WHEN("erasing the element given by the iterator") {
         map.remove(it);
         THEN("the element pointed to by the iterator is erased.") {

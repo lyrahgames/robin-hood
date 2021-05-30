@@ -20,7 +20,7 @@ struct hash_base {
   using iterator       = typename container::iterator;
   using const_iterator = typename container::const_iterator;
 
-  auto ideal_index(const key_type& key) const noexcept -> size_type {
+  auto hash_index(const key_type& key) const noexcept -> size_type {
     const auto mask = table.size - size_type{1};
     return hash(key) & mask;
   }
@@ -34,9 +34,9 @@ struct hash_base {
     return load >= size_type(std::floor(max_load_ratio * table.size));
   }
 
-  auto basic_lookup_data(const key_type& key) const noexcept
+  auto lookup_data(const key_type& key) const noexcept
       -> std::tuple<size_type, psl_type, bool> {
-    auto index = ideal_index(key);
+    auto index = hash_index(key);
     auto psl   = psl_type{1};
     for (; psl <= table.psl(index); ++psl) {
       if (equal(table.key(index), key)) return {index, psl, true};
@@ -45,15 +45,17 @@ struct hash_base {
     return {index, psl, false};
   }
 
-  auto basic_static_insert_data(const key_type& key) const noexcept
+  /// Assumes there is no entry with the given key inside the table.
+  auto static_insert_data(const key_type& key) const noexcept
       -> std::pair<size_type, psl_type> {
-    auto index = ideal_index(key);
+    auto index = hash_index(key);
     auto psl   = psl_type{1};
     for (; psl <= table.psl(index); ++psl)
       index = next(index);
     return {index, psl};
   }
 
+  /// Assumes the table entry with the given index is not empty.
   void prepare_insert(size_type index) {
     auto p = table.psl(index) + psl_type{1};
     auto i = next(index);
@@ -69,7 +71,7 @@ struct hash_base {
   }
 
   template <generic::forward_reference<key_type> K>
-  void basic_static_insert(size_type index, psl_type psl, K&& key) {
+  void basic_static_insert_key(size_type index, psl_type psl, K&& key) {
     ++load;
 
     if (table.empty(index)) {
@@ -82,32 +84,18 @@ struct hash_base {
     table.key(index) = std::forward<K>(key);
   }
 
-  void basic_static_insert(size_type index, psl_type psl, iterator it) {
-    ++load;
-
-    if (table.empty(index)) {
-      table.psl(index) = psl;
-      table.move_construct(index, it);
-      return;
-    }
-    prepare_insert(index);
-    table.psl(index) = psl;
-    table.move_assign(index, it);
-  }
-
-  void basic_reallocate_and_rehash(size_type c) {
+  void reallocate_and_rehash(size_type c) {
     container old_table{c, table.alloc};
-
     table.swap(old_table);
-    load = 0;
-
     for (size_type i = 0; i < old_table.size; ++i) {
       if (old_table.empty(i)) continue;
-      const auto [index, psl] = basic_static_insert_data(old_table.key(i));
-      basic_static_insert(index, psl, old_table.index_iterator(i));
+      const auto [index, psl] = static_insert_data(old_table.key(i));
+      if (!table.empty(index)) prepare_insert(index);
+      table.move_construct_or_assign(index, psl, old_table.index_iterator(i));
     }
   }
 
+  /// Assumes the table entry referenced by the given index is not empty.
   void basic_remove(size_type index) {
     auto next_index = next(index);
     while (table.psl(next_index) > 1) {
@@ -121,15 +109,13 @@ struct hash_base {
     --load;
   }
 
-  void double_capacity_and_rehash() {
-    basic_reallocate_and_rehash(table.size << 1);
-  }
+  void double_capacity_and_rehash() { reallocate_and_rehash(table.size << 1); }
 
   void reserve_capacity(size_type size) {
     // size = std::max(min_capacity, size);
     if (size <= table.size) return;
     size = ceil_pow2(size);
-    basic_reallocate_and_rehash(size);
+    reallocate_and_rehash(size);
   }
 
   void reserve(size_type count) {
@@ -147,15 +133,15 @@ struct hash_base {
   }
 
   template <generic::forward_reference<key_type> K>
-  auto basic_insert(size_type index, psl_type psl, K&& key) -> size_type {
+  auto basic_insert_key(size_type index, psl_type psl, K&& key) -> size_type {
     if (overloaded()) {
       double_capacity_and_rehash();
-      const auto [i, p] = basic_static_insert_data(key);
+      const auto [i, p] = static_insert_data(key);
 
       index = i;
       psl   = p;
     }
-    basic_static_insert(index, psl, std::forward<K>(key));
+    basic_static_insert_key(index, psl, std::forward<K>(key));
     return index;
   }
 
@@ -164,13 +150,13 @@ struct hash_base {
     // This makes sure key is constructed if it is not a direct forward
     // reference.
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
-    auto [index, psl, found] = basic_lookup_data(k);
+    auto [index, psl, found] = lookup_data(k);
     if (found)
       throw std::invalid_argument(
           "Failed to insert element that already exists!");
     if (overloaded())
       throw std::overflow_error("Failed to statically insert given element!");
-    basic_static_insert(index, psl, std::forward<decltype(k)>(k));
+    basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
     return index;
   }
 
@@ -179,16 +165,16 @@ struct hash_base {
     // This makes sure key is constructed if it is not a direct forward
     // reference.
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
-    auto [index, psl, found] = basic_lookup_data(k);
+    auto [index, psl, found] = lookup_data(k);
     if (found)
       throw std::invalid_argument(
           "Failed to insert element that already exists!");
-    index = basic_insert(index, psl, std::forward<decltype(k)>(k));
+    index = basic_insert_key(index, psl, std::forward<decltype(k)>(k));
     return index;
   }
 
   void remove(const key_type& key) {
-    const auto [index, psl, found] = basic_lookup_data(key);
+    const auto [index, psl, found] = lookup_data(key);
     if (!found)
       throw std::invalid_argument("Failed to remove non-existing key!");
     basic_remove(index);
@@ -215,18 +201,18 @@ struct hash_base {
   auto max_load_factor() const noexcept { return max_load_ratio; }
 
   bool contains(const key_type& key) const noexcept {
-    const auto [index, psl, found] = basic_lookup_data(key);
+    const auto [index, psl, found] = lookup_data(key);
     return found;
   }
 
-  auto lookup_iterator(const key_type& key) noexcept -> iterator {
-    const auto [index, psl, found] = basic_lookup_data(key);
+  auto lookup(const key_type& key) noexcept -> iterator {
+    const auto [index, psl, found] = lookup_data(key);
     if (found) return {&table, index};
     return table.end();
   }
 
-  auto lookup_iterator(const key_type& key) const noexcept -> const_iterator {
-    const auto [index, psl, found] = basic_lookup_data(key);
+  auto lookup(const key_type& key) const noexcept -> const_iterator {
+    const auto [index, psl, found] = lookup_data(key);
     if (found) return {&table, index};
     return table.end();
   }

@@ -202,12 +202,14 @@ struct flat_key_value_table : public basic_iterator_interface<
     construct_value(index, std::move(values[from]));
   }
 
-  void move_construct(size_type index, iterator it) {
-    construct_key(index, std::move(it.base->keys[it.index]));
-    construct_value(index, std::move(it.base->values[it.index]));
-  }
-
-  void move_assign(size_type index, iterator it) {
+  void move_construct_or_assign(size_type index, psl_type p, iterator it) {
+    if (empty(index)) {
+      psls[index] = p;
+      construct_key(index, std::move(it.base->keys[it.index]));
+      construct_value(index, std::move(it.base->values[it.index]));
+      return;
+    }
+    psls[index]   = p;
     keys[index]   = std::move(it.base->keys[it.index]);
     values[index] = std::move(it.base->values[it.index]);
   }

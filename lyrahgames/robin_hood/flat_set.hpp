@@ -47,7 +47,7 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
   using iterator       = typename base::iterator;
 
   /// Used for statistics and logging tests.
-  using base::basic_lookup_data;
+  using base::lookup_data;
 
   flat_set()                   = default;
   virtual ~flat_set() noexcept = default;
@@ -113,12 +113,12 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
 
   void reserve_capacity(size_type count) { base::reserve_capacity(count); }
 
-  auto lookup_iterator(const key_type& key) noexcept -> iterator {
-    return base::lookup_iterator(key);
+  auto lookup(const key_type& key) noexcept -> iterator {
+    return base::lookup(key);
   }
 
-  auto lookup_iterator(const key_type& key) const noexcept -> const_iterator {
-    return base::lookup_iterator(key);
+  auto lookup(const key_type& key) const noexcept -> const_iterator {
+    return base::lookup(key);
   }
 
   auto operator[](const key_type& key) -> flat_set& {

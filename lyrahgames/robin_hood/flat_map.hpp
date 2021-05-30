@@ -42,7 +42,7 @@ class flat_map
   using iterator       = typename base::iterator;
 
   /// Used for statistics and logging tests.
-  using base::basic_lookup_data;
+  using base::lookup_data;
 
   flat_map()                   = default;
   virtual ~flat_map() noexcept = default;
@@ -150,12 +150,12 @@ class flat_map
             generic::forwardable<mapped_type> V>
   void insert_or_assign(K&& key, V&& value) {
     decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
-    auto [index, psl, found] = basic_lookup_data(k);
+    auto [index, psl, found] = base::lookup_data(k);
     if (found) {
       base::table.value(index) = std::forward<V>(value);
       return;
     }
-    index = basic_insert(index, psl, std::forward<decltype(k)>(k));
+    index = base::basic_insert_key(index, psl, std::forward<decltype(k)>(k));
     base::table.construct_value(index, std::forward<V>(value));
   }
 
@@ -175,27 +175,27 @@ class flat_map
 
   void clear() { base::clear(); }
 
-  auto lookup_iterator(const key_type& key) noexcept -> iterator {
-    return base::lookup_iterator(key);
+  auto lookup(const key_type& key) noexcept -> iterator {
+    return base::lookup(key);
   }
 
-  auto lookup_iterator(const key_type& key) const noexcept -> const_iterator {
-    return base::lookup_iterator(key);
+  auto lookup(const key_type& key) const noexcept -> const_iterator {
+    return base::lookup(key);
   }
 
   template <generic::forwardable<key_type> K>
   auto operator[](K&& key) -> mapped_type&  //
       requires std::default_initializable<mapped_type> {
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
-    auto [index, psl, found] = basic_lookup_data(k);
+    auto [index, psl, found] = base::lookup_data(k);
     if (found) return base::table.value(index);
-    index = base::basic_insert(index, psl, std::forward<decltype(k)>(k));
+    index = base::basic_insert_key(index, psl, std::forward<decltype(k)>(k));
     base::table.construct_value(index);
     return base::table.value(index);
   }
 
   auto operator()(const key_type& key) -> mapped_type& {
-    const auto [index, psl, found] = base::basic_lookup_data(key);
+    const auto [index, psl, found] = base::lookup_data(key);
     if (found) return base::table.value(index);
     throw std::invalid_argument("Failed to find the given key.");
   }

@@ -81,8 +81,7 @@ SCENARIO("robin_hood::flat_set::insert") {
   }
 }
 
-SCENARIO(
-    "robin_hood::flat_set::basic_lookup_data: Lookup Statistics for Key Type") {
+SCENARIO("robin_hood::flat_set::lookup_data: Lookup Statistics for Key Type") {
   GIVEN("a set with a key type able to log its usage and some elements") {
     // State to compare the log of log_value against.
     struct log::state state {};
@@ -98,7 +97,7 @@ SCENARIO(
       const auto keys = std::initializer_list<log_value>{1, 2, 9, 0, 8, 5};
       for (auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = set.basic_lookup_data(key);
+        const auto [index, psl, found] = set.lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
@@ -118,7 +117,7 @@ SCENARIO(
       const auto keys = std::initializer_list<log_value>{3, 7, 18};
       for (auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = set.basic_lookup_data(key);
+        const auto [index, psl, found] = set.lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "

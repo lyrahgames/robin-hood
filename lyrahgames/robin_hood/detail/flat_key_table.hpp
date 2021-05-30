@@ -160,11 +160,13 @@ struct flat_key_table
     construct_key(index, std::move(keys[from]));
   }
 
-  void move_construct(size_type index, iterator it) {
-    construct_key(index, std::move(it.base->keys[it.index]));
-  }
-
-  void move_assign(size_type index, iterator it) {
+  void move_construct_or_assign(size_type index, psl_type p, iterator it) {
+    if (empty(index)) {
+      psls[index] = p;
+      construct_key(index, std::move(it.base->keys[it.index]));
+      return;
+    }
+    psls[index] = p;
     keys[index] = std::move(it.base->keys[it.index]);
   }
 
