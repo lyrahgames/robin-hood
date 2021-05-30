@@ -1,1 +1,5 @@
+import libs = lyrahgames-robin-hood%lib{lyrahgames-robin-hood}
+
 ./: {*/ -build/}
+
+./: exe{version}: cxx{version} $libs

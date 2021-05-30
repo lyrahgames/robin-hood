@@ -1,2 +1,1 @@
-import libs = lyrahgames-robin-hood%lib{lyrahgames-robin-hood}
 exe{duplication-removal}: {hxx cxx}{**} $libs
