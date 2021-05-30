@@ -195,12 +195,12 @@ struct hash_base {
   }
 
   void remove(iterator it) {
-    assert((it.base == &table) && table.valid(it.index));
+    assert((it.base == &table) && !table.empty(it.index));
     basic_remove(it.index);
   }
 
   void remove(const_iterator it) {
-    assert((it.base == &table) && table.valid(it.index));
+    assert((it.base == &table) && !table.empty(it.index));
     basic_remove(it.index);
   }
 

@@ -74,6 +74,21 @@ struct flat_key_value_table : public basic_iterator_interface<
     return *this;
   }
 
+  bool empty() const noexcept { return size == 0; }
+
+  bool empty(size_type index) const noexcept { return psl[index] == 0; }
+
+  auto entry(size_type index) noexcept {
+    return std::pair<const key_type&, value_type&>{keys[index], values[index]};
+  }
+
+  auto entry(size_type index) const noexcept {
+    return std::pair<const key_type&, const value_type&>{keys[index],
+                                                         values[index]};
+  }
+
+  auto index_iterator(size_type index) { return iterator{this, index}; }
+
   void swap(flat_key_value_table& t) noexcept {
     std::swap(alloc, t.alloc);
     std::swap(size, t.size);
@@ -105,23 +120,11 @@ struct flat_key_value_table : public basic_iterator_interface<
   void copy(const flat_key_value_table& t) {
     init();
     for (size_type i = 0; i < t.size; ++i) {
-      if (!t.valid(i)) continue;
+      if (t.empty(i)) continue;
       psl[i] = t.psl[i];
       construct_key(i, t.keys[i]);
+      construct_value(i, t.values[i]);
     }
-  }
-
-  bool empty() const noexcept { return psl == nullptr; }
-  bool empty(size_type index) const noexcept { return psl[index] == 0; }
-  bool valid(size_type index) const noexcept { return psl[index]; }
-
-  auto entry(size_type index) noexcept {
-    return std::pair<const key_type&, value_type&>{keys[index], values[index]};
-  }
-
-  auto entry(size_type index) const noexcept {
-    return std::pair<const key_type&, const value_type&>{keys[index],
-                                                         values[index]};
   }
 
   void allocate() {
@@ -176,17 +179,6 @@ struct flat_key_value_table : public basic_iterator_interface<
     psl[index] = 0;
   }
 
-  void swap(size_type first, size_type second) {
-    using xstd::swap;
-    swap(keys[first], keys[second]);
-    swap(values[first], values[second]);
-  }
-
-  void move(size_type to, size_type from) {
-    keys[to]   = std::move(keys[from]);
-    values[to] = std::move(values[from]);
-  }
-
   void move_construct(size_type index, size_type from) {
     construct_key(index, std::move(keys[from]));
     construct_value(index, std::move(values[from]));
@@ -202,7 +194,16 @@ struct flat_key_value_table : public basic_iterator_interface<
     values[index] = std::move(it.base->values[it.index]);
   }
 
-  auto index_iterator(size_type index) { return iterator{this, index}; }
+  void swap(size_type first, size_type second) {
+    using xstd::swap;
+    swap(keys[first], keys[second]);
+    swap(values[first], values[second]);
+  }
+
+  void move(size_type to, size_type from) {
+    keys[to]   = std::move(keys[from]);
+    values[to] = std::move(values[from]);
+  }
 
   allocator   alloc  = {};
   size_type   size   = 0;
