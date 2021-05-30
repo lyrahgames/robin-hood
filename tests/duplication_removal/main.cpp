@@ -23,6 +23,10 @@ int main(int argc, char** argv) {
     const auto arg = string(argv[1]);
     if (arg == "lyrahgames_robin_hood_map")
       method = implementation::lyrahgames_robin_hood_map;
+    else if (arg == "lyrahgames_robin_hood_flat_set")
+      method = implementation::lyrahgames_robin_hood_flat_set;
+    else if (arg == "lyrahgames_robin_hood_flat_map")
+      method = implementation::lyrahgames_robin_hood_flat_map;
     else if (arg == "std_unordered_map")
       method = implementation::std_unordered_map;
     else if (arg == "naive")
@@ -101,6 +105,22 @@ int main(int argc, char** argv) {
              duplicated_point_count);
       time = xstd::duration([&points] {
         points = lyrahgames_robin_hood_map::duplication_removal(points);
+      });
+      break;
+
+    case implementation::lyrahgames_robin_hood_flat_set:
+      assert(lyrahgames_robin_hood_flat_set::duplication_count(points) ==
+             duplicated_point_count);
+      time = xstd::duration([&points] {
+        points = lyrahgames_robin_hood_flat_set::duplication_removal(points);
+      });
+      break;
+
+    case implementation::lyrahgames_robin_hood_flat_map:
+      assert(lyrahgames_robin_hood_flat_map::duplication_count(points) ==
+             duplicated_point_count);
+      time = xstd::duration([&points] {
+        points = lyrahgames_robin_hood_flat_map::duplication_removal(points);
       });
       break;
   }

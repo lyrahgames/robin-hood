@@ -93,6 +93,7 @@ SCENARIO("robin_hood::flat_map::operator[]: Insert or Access Elements") {
   GIVEN("an empty map") {
     robin_hood::flat_map<int, int> map{};
     CAPTURE(map);
+    CAPTURE(map.data());
 
     CHECK(map.empty());
     CHECK(map.size() == 0);

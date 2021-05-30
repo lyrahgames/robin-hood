@@ -4,12 +4,16 @@
 //
 #include <unordered_map>
 //
+#include <lyrahgames/robin_hood/flat_map.hpp>
+#include <lyrahgames/robin_hood/flat_set.hpp>
 #include <lyrahgames/robin_hood/map.hpp>
 
 enum class implementation {
   naive,
   std_unordered_map,
-  lyrahgames_robin_hood_map
+  lyrahgames_robin_hood_map,
+  lyrahgames_robin_hood_flat_map,
+  lyrahgames_robin_hood_flat_set
 };
 
 namespace naive {
@@ -116,3 +120,73 @@ inline auto duplication_removal(const T& data) {
 }
 
 }  // namespace lyrahgames_robin_hood_map
+
+namespace lyrahgames_robin_hood_flat_set {
+
+template <std::ranges::input_range T>
+inline auto duplication_count(const T& data) {
+  using namespace std;
+  using namespace lyrahgames;
+  using value_type = ranges::range_value_t<T>;
+
+  robin_hood::flat_set<value_type> set(data);
+  return ranges::size(data) - set.size();
+}
+
+template <std::ranges::input_range T>
+inline auto duplication_removal(const T& data) {
+  using namespace std;
+  using lyrahgames::robin_hood::flat_set;
+  using value_type = ranges::range_value_t<T>;
+
+  vector<value_type> result{};
+  result.reserve(ranges::size(data));
+
+  // auto set = robin_hood::auto_flat_set(data);
+  flat_set<value_type> set{};
+  set.insert(data);
+
+  for (const auto& p : set)
+    result.push_back(p);
+
+  return result;
+}
+
+}  // namespace lyrahgames_robin_hood_flat_set
+
+namespace lyrahgames_robin_hood_flat_map {
+
+template <std::ranges::input_range T>
+inline auto duplication_count(const T& data) {
+  using namespace std;
+  using namespace lyrahgames;
+  using value_type = ranges::range_value_t<T>;
+
+  robin_hood::flat_map<value_type, int> map{};
+  map.reserve(ranges::size(data));
+  for (const auto& p : data)
+    ++map[p];
+  return ranges::size(data) - map.size();
+}
+
+template <std::ranges::input_range T>
+inline auto duplication_removal(const T& data) {
+  using namespace std;
+  using namespace lyrahgames;
+  using value_type = ranges::range_value_t<T>;
+
+  vector<value_type> result{};
+  result.reserve(ranges::size(data));
+
+  robin_hood::flat_map<value_type, int> map{};
+  map.reserve(ranges::size(data));
+  for (const auto& p : data) {
+    ++map[p];
+  }
+  for (const auto& [p, v] : map)
+    result.push_back(p);
+
+  return result;
+}
+
+}  // namespace lyrahgames_robin_hood_flat_map

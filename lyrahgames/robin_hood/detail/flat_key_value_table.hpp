@@ -124,6 +124,7 @@ struct flat_key_value_table : public basic_iterator_interface<
 
   // private:
   void init() {
+    if (!size) return;
     allocate();
     std::fill(psls, psls + size, 0);
   }

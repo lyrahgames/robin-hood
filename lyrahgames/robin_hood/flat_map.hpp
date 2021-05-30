@@ -45,13 +45,6 @@ class flat_map
   using base::lookup_data;
 
   flat_map() = default;
-  // virtual ~flat_map() noexcept = default;
-
-  // flat_map(const flat_map&) = default;
-  // flat_map& operator=(const flat_map&) = default;
-
-  // flat_map(flat_map&&) noexcept = default;
-  // flat_map& operator=(flat_map&&) noexcept = default;
 
   explicit flat_map(size_type        s,
                     const hasher&    h = {},

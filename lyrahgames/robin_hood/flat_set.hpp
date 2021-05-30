@@ -58,13 +58,21 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
   flat_set(flat_set&&) noexcept = default;
   flat_set& operator=(flat_set&&) noexcept = default;
 
-  explicit flat_set(size_type        s,
-                    const hasher&    h = {},
-                    const equality&  e = {},
-                    const allocator& a = {}) {
-    reserve_capacity(s);
-    base::hash  = h;
-    base::equal = e;
+  explicit flat_set(size_type s,
+                    hasher    h = {},
+                    equality  e = {},
+                    allocator a = {})
+      : base(s, h, e, a) {}
+
+  template <generic::input_range<key_type> T>
+  explicit flat_set(const T& data) : base(0) {
+    insert(data);
+  }
+
+  template <generic::input_range<key_type> T>
+  explicit flat_set(const T& data, hasher h, equality e = {}, allocator a = {})
+      : flat_set(0, h, e, a) {
+    insert(data);
   }
 
   bool empty() const noexcept { return base::empty(); }
@@ -95,8 +103,24 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
   }
 
   template <generic::forwardable<key_type> K>
+  void try_static_insert(K&& key) {
+    if (base::overloaded()) return;
+    decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
+    auto [index, psl, found] = base::lookup_data(k);
+    if (found) return;
+    base::basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
+  }
+
+  template <generic::forwardable<key_type> K>
   void insert(K&& key) {
     base::insert_key(std::forward<K>(key));
+  }
+
+  template <generic::input_range<key_type> T>
+  void insert(const T& data) {
+    reserve(std::ranges::size(data) + size());
+    for (const auto& k : data)
+      try_static_insert(k);
   }
 
   bool contains(const key_type& key) const noexcept {
@@ -151,6 +175,21 @@ inline auto auto_flat_set(size_t           size,
                           const Equality&  equal = {},
                           const Allocator& alloc = {}) {
   return FLAT_SET(size, hash, equal, alloc);
+}
+
+template <std::ranges::input_range                       T,
+          generic::hasher<std::ranges::range_value_t<T>> Hasher =
+              std::hash<std::ranges::range_value_t<T>>,
+          generic::equivalence_relation<std::ranges::range_value_t<T>>
+              Equality = std::equal_to<std::ranges::range_value_t<T>>,
+          generic::allocator Allocator =
+              std::allocator<std::ranges::range_value_t<T>>>
+inline auto auto_flat_set(const T&         list,
+                          const Hasher&    hash  = {},
+                          const Equality&  equal = {},
+                          const Allocator& alloc = {}) {
+  return flat_set<std::ranges::range_value_t<T>, Hasher, Equality, Allocator>(
+      list, hash, equal, alloc);
 }
 
 #undef FLAT_SET

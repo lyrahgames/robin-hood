@@ -22,10 +22,10 @@ struct hash_base {
 
   hash_base() = default;
 
-  explicit hash_base(size_type        s,
-                     const hasher&    h = {},
-                     const equality&  e = {},
-                     const allocator& a = {})
+  explicit hash_base(size_type s,
+                     hasher    h = {},
+                     equality  e = {},
+                     allocator a = {})
       : table{s, a}, hash{h}, equal{e} {}
 
   auto hash_index(const key_type& key) const noexcept -> size_type {
@@ -122,7 +122,7 @@ struct hash_base {
   void double_capacity_and_rehash() { reallocate_and_rehash(table.size << 1); }
 
   void reserve_capacity(size_type size) {
-    // size = std::max(min_capacity, size);
+    size = std::max(min_capacity, size);
     if (size <= table.size) return;
     size = ceil_pow2(size);
     reallocate_and_rehash(size);
@@ -232,7 +232,9 @@ struct hash_base {
     table.clear();
   }
 
-  container table{8, allocator{}};
+  static constexpr size_type min_capacity = 8;
+
+  container table{min_capacity, allocator{}};
   hasher    hash{};
   equality  equal{};
   size_type load           = 0;
