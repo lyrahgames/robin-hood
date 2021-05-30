@@ -152,7 +152,7 @@ class flat_map
     decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
     auto [index, psl, found] = basic_lookup_data(k);
     if (found) {
-      base::table.values[index] = std::forward<V>(value);
+      base::table.value(index) = std::forward<V>(value);
       return;
     }
     index = basic_insert(index, psl, std::forward<decltype(k)>(k));
@@ -188,15 +188,15 @@ class flat_map
       requires std::default_initializable<mapped_type> {
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
     auto [index, psl, found] = basic_lookup_data(k);
-    if (found) return base::table.values[index];
+    if (found) return base::table.value(index);
     index = base::basic_insert(index, psl, std::forward<decltype(k)>(k));
     base::table.construct_value(index);
-    return base::table.values[index];
+    return base::table.value(index);
   }
 
   auto operator()(const key_type& key) -> mapped_type& {
     const auto [index, psl, found] = base::basic_lookup_data(key);
-    if (found) return base::table.values[index];
+    if (found) return base::table.value(index);
     throw std::invalid_argument("Failed to find the given key.");
   }
 

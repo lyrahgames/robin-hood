@@ -62,7 +62,7 @@ struct flat_key_table
 
   bool empty() const noexcept { return size == 0; }
 
-  bool empty(size_type index) const noexcept { return psl[index] == 0; }
+  bool empty(size_type index) const noexcept { return psls[index] == 0; }
 
   auto entry(size_type index) noexcept -> const key_type& {
     return keys[index];
@@ -76,10 +76,22 @@ struct flat_key_table
     return iterator{this, index};
   }
 
+  auto psl(size_type index) noexcept -> psl_type& { return psls[index]; }
+
+  auto psl(size_type index) const noexcept -> const psl_type& {
+    return psls[index];
+  }
+
+  auto key(size_type index) noexcept -> key_type& { return keys[index]; }
+
+  auto key(size_type index) const noexcept -> const key_type& {
+    return keys[index];
+  }
+
   void swap(flat_key_table& t) noexcept {
     std::swap(alloc, t.alloc);
     std::swap(size, t.size);
-    std::swap(psl, t.psl);
+    std::swap(psls, t.psls);
     std::swap(keys, t.keys);
   }
 
@@ -94,7 +106,7 @@ struct flat_key_table
     init();
     for (size_type i = 0; i < t.size; ++i) {
       if (t.empty(i)) continue;
-      psl[i] = t.psl[i];
+      psls[i] = t.psls[i];
       construct_key(i, t.keys[i]);
     }
   }
@@ -104,20 +116,20 @@ struct flat_key_table
     basic_psl_allocator psl_alloc = alloc;
 
     keys = key_allocator::allocate(key_alloc, size);
-    psl  = psl_allocator::allocate(psl_alloc, size);
+    psls = psl_allocator::allocate(psl_alloc, size);
   }
 
   void deallocate() {
     basic_key_allocator key_alloc = alloc;
     basic_psl_allocator psl_alloc = alloc;
 
-    psl_allocator::deallocate(psl_alloc, psl, size);
+    psl_allocator::deallocate(psl_alloc, psls, size);
     key_allocator::deallocate(key_alloc, keys, size);
   }
 
   void init() {
     allocate();
-    std::fill(psl, psl + size, 0);
+    std::fill(psls, psls + size, 0);
   }
 
   void free() {
@@ -141,7 +153,7 @@ struct flat_key_table
 
   void destroy(size_type index) noexcept {
     destroy_key(index);
-    psl[index] = 0;
+    psls[index] = 0;
   }
 
   void move_construct(size_type index, size_type from) {
@@ -167,7 +179,7 @@ struct flat_key_table
 
   allocator alloc = {};
   size_type size  = 0;
-  psl_type* psl   = nullptr;
+  psl_type* psls  = nullptr;
   key_type* keys  = nullptr;
 };
 
@@ -182,7 +194,7 @@ std::ostream& operator<<(std::ostream&                         os,
       os << ' ' << setfill('-') << setw(45) << '\n' << setfill(' ');
       continue;
     }
-    os << setw(15) << table.keys[i] << setw(15) << table.psl[i] << '\n';
+    os << setw(15) << table.keys[i] << setw(15) << table.psls[i] << '\n';
   }
   return os;
 }

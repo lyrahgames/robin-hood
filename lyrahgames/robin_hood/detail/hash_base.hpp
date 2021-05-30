@@ -38,8 +38,8 @@ struct hash_base {
       -> std::tuple<size_type, psl_type, bool> {
     auto index = ideal_index(key);
     auto psl   = psl_type{1};
-    for (; psl <= table.psl[index]; ++psl) {
-      if (equal(table.keys[index], key)) return {index, psl, true};
+    for (; psl <= table.psl(index); ++psl) {
+      if (equal(table.key(index), key)) return {index, psl, true};
       index = next(index);
     }
     return {index, psl, false};
@@ -49,22 +49,22 @@ struct hash_base {
       -> std::pair<size_type, psl_type> {
     auto index = ideal_index(key);
     auto psl   = psl_type{1};
-    for (; psl <= table.psl[index]; ++psl)
+    for (; psl <= table.psl(index); ++psl)
       index = next(index);
     return {index, psl};
   }
 
   void prepare_insert(size_type index) {
-    auto p = table.psl[index] + psl_type{1};
+    auto p = table.psl(index) + psl_type{1};
     auto i = next(index);
     for (; !table.empty(i); ++p) {
-      if (p > table.psl[i]) {
+      if (p > table.psl(i)) {
         table.swap(i, index);
-        swap(p, table.psl[i]);
+        swap(p, table.psl(i));
       }
       i = next(i);
     }
-    table.psl[i] = p;
+    table.psl(i) = p;
     table.move_construct(i, index);
   }
 
@@ -73,25 +73,25 @@ struct hash_base {
     ++load;
 
     if (table.empty(index)) {
-      table.psl[index] = psl;
+      table.psl(index) = psl;
       table.construct_key(index, std::forward<K>(key));
       return;
     }
     prepare_insert(index);
-    table.psl[index]  = psl;
-    table.keys[index] = std::forward<K>(key);
+    table.psl(index) = psl;
+    table.key(index) = std::forward<K>(key);
   }
 
   void basic_static_insert(size_type index, psl_type psl, iterator it) {
     ++load;
 
     if (table.empty(index)) {
-      table.psl[index] = psl;
+      table.psl(index) = psl;
       table.move_construct(index, it);
       return;
     }
     prepare_insert(index);
-    table.psl[index] = psl;
+    table.psl(index) = psl;
     table.move_assign(index, it);
   }
 
@@ -103,16 +103,16 @@ struct hash_base {
 
     for (size_type i = 0; i < old_table.size; ++i) {
       if (old_table.empty(i)) continue;
-      const auto [index, psl] = basic_static_insert_data(old_table.keys[i]);
+      const auto [index, psl] = basic_static_insert_data(old_table.key(i));
       basic_static_insert(index, psl, old_table.index_iterator(i));
     }
   }
 
   void basic_remove(size_type index) {
     auto next_index = next(index);
-    while (table.psl[next_index] > 1) {
+    while (table.psl(next_index) > 1) {
       table.move(index, next_index);
-      table.psl[index] = table.psl[next_index] - 1;
+      table.psl(index) = table.psl(next_index) - 1;
 
       index      = next_index;
       next_index = next(next_index);
