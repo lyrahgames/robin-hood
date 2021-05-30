@@ -12,7 +12,7 @@ int main() {
        << LYRAHGAMES_ROBIN_HOOD_VERSION_STR << '\n'
        << setw(40) << "LYRAHGAMES_ROBIN_HOOD_VERSION_ID = " << setw(40)
        << LYRAHGAMES_ROBIN_HOOD_VERSION_ID << '\n'
-       << setw(40) << "LYRAHGAMES_ROBIN_HOOD_VERSION_FULL= " << setw(40)
+       << setw(40) << "LYRAHGAMES_ROBIN_HOOD_VERSION_FULL = " << setw(40)
        << LYRAHGAMES_ROBIN_HOOD_VERSION_FULL << '\n'
        << setw(40) << "LYRAHGAMES_ROBIN_HOOD_VERSION_MAJOR = " << setw(40)
        << LYRAHGAMES_ROBIN_HOOD_VERSION_MAJOR << '\n'

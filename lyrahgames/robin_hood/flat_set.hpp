@@ -104,11 +104,7 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
 
   template <generic::forwardable<key_type> K>
   void try_static_insert(K&& key) {
-    if (base::overloaded()) return;
-    decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
-    auto [index, psl, found] = base::lookup_data(k);
-    if (found) return;
-    base::basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
+    base::try_static_insert_key(std::forward<K>(key));
   }
 
   template <generic::forwardable<key_type> K>

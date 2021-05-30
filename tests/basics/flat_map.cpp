@@ -813,7 +813,7 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
         reset(log_value::log);
         map.static_insert(key, map.size());
 
-        THEN("additionally two equals are needed.") {
+        THEN("two comparisons are needed.") {
           state.counters[state.copy_construct_calls] = 1;
           state.counters[state.hash_calls]           = 1;
           state.counters[state.equal_calls]          = 2;
@@ -832,7 +832,7 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
         reset(log_value::log);
         map.static_insert(key, map.size());
 
-        THEN("additionally three equals are needed.") {
+        THEN("three comparisons are needed.") {
           state.counters[state.copy_construct_calls] = 1;
           state.counters[state.hash_calls]           = 1;
           state.counters[state.equal_calls]          = 3;
@@ -852,8 +852,7 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
         map.static_insert(key, map.size());
 
         THEN(
-            "additionally a temporary key is move constructed and destroyedat "
-            "the end. The swapped element is move constructed in its new"
+            "the swapped element is move constructed in its new"
             "place. The given key is copied into the existing location.") {
           state.counters[state.copy_assign_calls]    = 1;
           state.counters[state.move_construct_calls] = 1;
@@ -876,7 +875,7 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
         reset(log_value::log);
         map.static_insert(key, map.size());
 
-        THEN("additionally swap has to be called.") {
+        THEN("swap has to be called once.") {
           state.counters[state.copy_assign_calls]    = 1;
           state.counters[state.move_construct_calls] = 1;
           state.counters[state.hash_calls]           = 1;
@@ -895,7 +894,7 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
         reset(log_value::log);
         map.static_insert(key, map.size());
 
-        THEN("additionally equal and swap have to be called.") {
+        THEN("two comparisons and one swap have to be called.") {
           state.counters[state.copy_assign_calls]    = 1;
           state.counters[state.move_construct_calls] = 1;
           state.counters[state.hash_calls]           = 1;
@@ -943,6 +942,34 @@ SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
           state.counters[state.swap_calls]           = 1;
           CHECK(log_value::log == state);
         }
+      }
+    }
+  }
+}
+
+SCENARIO("robin_hood::flat_map:emplace: Emplacing Elements") {
+  GIVEN("a map") {
+    robin_hood::flat_map<int, std::pair<int, int>> map{{1, {2, 3}}};
+    // CAPTURE(map);
+    CHECK(map.size() == 1);
+
+    WHEN("attempting to emplace a value for an exsiting key") {
+      THEN("an exception is thrown.") {
+        CHECK_THROWS_AS(map.emplace(1, 4, 5), std::invalid_argument);
+        CHECK(map.size() == 1);
+        CHECK(map(1).first == 2);
+        CHECK(map(1).second == 3);
+      }
+    }
+
+    WHEN("attempting to emplace a value for a new key") {
+      map.emplace(2, 4, 5);
+      THEN(
+          "a new element is added by perfect forward constructing the "
+          "according value based on the given arguments.") {
+        CHECK(map.size() == 2);
+        CHECK(map(2).first == 4);
+        CHECK(map(2).second == 5);
       }
     }
   }

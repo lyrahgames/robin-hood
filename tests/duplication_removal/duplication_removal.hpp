@@ -181,7 +181,8 @@ inline auto duplication_removal(const T& data) {
   robin_hood::flat_map<value_type, int> map{};
   map.reserve(ranges::size(data));
   for (const auto& p : data) {
-    ++map[p];
+    // ++map[p];
+    map.try_static_insert(p);
   }
   for (const auto& [p, v] : map)
     result.push_back(p);

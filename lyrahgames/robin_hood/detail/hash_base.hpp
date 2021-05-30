@@ -156,6 +156,18 @@ struct hash_base {
   }
 
   template <generic::forwardable<key_type> K>
+  auto try_static_insert_key(K&& key) -> std::pair<size_type, bool> {
+    if (overloaded()) return {0, false};
+    // This makes sure key is constructed if it is not a direct forward
+    // reference.
+    decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
+    auto [index, psl, found] = lookup_data(k);
+    if (found) return {index, false};
+    basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
+    return {index, true};
+  }
+
+  template <generic::forwardable<key_type> K>
   auto static_insert_key(K&& key) -> size_type {
     // This makes sure key is constructed if it is not a direct forward
     // reference.
@@ -168,6 +180,17 @@ struct hash_base {
       throw std::overflow_error("Failed to statically insert given element!");
     basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
     return index;
+  }
+
+  template <generic::forwardable<key_type> K>
+  auto try_insert_key(K&& key) -> std::pair<size_type, bool> {
+    // This makes sure key is constructed if it is not a direct forward
+    // reference.
+    decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
+    auto [index, psl, found] = lookup_data(k);
+    if (found) return {index, false};
+    index = basic_insert_key(index, psl, std::forward<decltype(k)>(k));
+    return {index, true};
   }
 
   template <generic::forwardable<key_type> K>

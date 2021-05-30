@@ -190,6 +190,31 @@ class flat_map
     base::table.construct_value(index);
   }
 
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. If a reallocation would take place or if the key has already
+  /// been inserted, the function does nothing.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  void try_static_insert(K&& key, V&& value) {
+    const auto [index, done] =
+        base::try_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index, std::forward<V>(value));
+  }
+
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. The value of the element is default constructed. If a
+  /// reallocation would take place or if the key has already been inserted, the
+  /// function does nothing.
+  template <generic::forwardable<key_type> K>
+  void try_static_insert(K&& key)  //
+      requires std::default_initializable<mapped_type> {
+    const auto [index, done] =
+        base::try_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index);
+  }
+
   /// Insert a given element into the map with possible reallocation and
   /// rehashing. If the key has already been inserted, the
   /// function throws an exception of type 'std::invalid_argument'.
@@ -207,6 +232,29 @@ class flat_map
   void insert(K&& key)  //
       requires std::default_initializable<mapped_type> {
     const auto index = base::insert_key(std::forward<K>(key));
+    base::table.construct_value(index);
+  }
+
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. If a reallocation would take place or if the key has already
+  /// been inserted, the function does nothing.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  void try_insert(K&& key, V&& value) {
+    const auto [index, done] = base::try_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index, std::forward<V>(value));
+  }
+
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing. The value of the element is default constructed. If a
+  /// reallocation would take place or if the key has already been inserted, the
+  /// function does nothing.
+  template <generic::forwardable<key_type> K>
+  void try_insert(K&& key)  //
+      requires std::default_initializable<mapped_type> {
+    const auto [index, done] = base::try_insert_key(std::forward<K>(key));
+    if (!done) return;
     base::table.construct_value(index);
   }
 
@@ -232,6 +280,46 @@ class flat_map
     auto v = ranges::begin(values);
     for (auto k = ranges::begin(keys); k != ranges::end(keys); ++k, ++v)
       static_insert_or_assign(*k, *v);
+  }
+
+  /// Statically emplace a new element into the map by constructing its value in
+  /// place. This function uses perfect forwarding construction.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void static_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...> {
+    const auto index = base::static_insert_key(std::forward<K>(key));
+    base::table.construct_value(index, std::forward<arguments>(args)...);
+  }
+
+  /// Statically emplace a new element into the map by constructing its value in
+  /// place. This function uses perfect forwarding construction. If the given
+  /// key already exists or if the map would have to reallocate new storage, the
+  /// function does nothing.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void try_static_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...> {
+    const auto [index, done] =
+        base::try_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index, std::forward<arguments>(args)...);
+  }
+
+  /// Emplace a new element into the map by constructing its value in place.
+  /// This function uses perfect forwarding construction.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...> {
+    const auto index = base::insert_key(std::forward<K>(key));
+    base::table.construct_value(index, std::forward<arguments>(args)...);
+  }
+
+  /// Emplace a new element into the map by constructing its value in
+  /// place. This function uses perfect forwarding construction.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void try_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...> {
+    const auto index = base::try_insert_key(std::forward<K>(key));
+    base::table.construct_value(index, std::forward<arguments>(args)...);
   }
 
   /// Access the element given by key and assign the given value to it.
