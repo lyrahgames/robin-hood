@@ -75,43 +75,117 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
     insert(data);
   }
 
+  /// Checks if the set contains zero elements.
   bool empty() const noexcept { return base::empty(); }
 
+  /// Returns the count of inserted elements.
   auto size() const noexcept { return base::size(); }
 
+  /// Returns the maximum number of storable elements in the current table.
+  /// The capacity is doubled when the the load factor exceeds
+  /// the maximum load factor.
   auto capacity() const noexcept { return base::capacity(); }
 
+  /// Returns the current load factor of the set.
+  /// The load factor is the quotient of size and capacity.
   auto load_factor() const noexcept { return base::load_factor(); }
 
+  /// Returns the maximum load factor the set is allowed to have before
+  /// rehashing all elements with a bigger capacity.
   auto max_load_factor() const noexcept { return base::max_load_factor(); }
 
+  /// Sets the maximum load factor the set is allowed to have before
+  /// rehashing all elements with a bigger capacity.
+  /// Setting the maximum load factor to smaller values, may trigger a
+  /// reallocation and rehashing of all contained keys.
   void set_max_load_factor(real x) { base::set_max_load_factor(x); }
 
+  /// Return an iterator to the beginning of the set.
   auto begin() noexcept -> iterator { return base::table.begin(); }
 
+  /// Return a constant iterator to the beginning of the set.
   auto begin() const noexcept -> const_iterator { return base::table.begin(); }
 
+  /// Return an iterator to the end of the set.
   auto end() noexcept -> iterator { return base::table.end(); }
 
+  /// Return a constant iterator to the end of the set.
   auto end() const noexcept -> const_iterator { return base::table.end(); }
 
+  /// Returns a constant reference to the underlying table.
+  /// Mainly used for debugging and logging.
   const auto& data() const noexcept { return base::table; }
 
+  /// Checks if an element has already been inserted into the map.
+  bool contains(const key_type& key) const noexcept {
+    return base::contains(key);
+  }
+
+  /// Creates an iterator pointing to the given key.
+  /// If this is not possible, returns the end iterator.
+  auto lookup(const key_type& key) noexcept -> iterator {
+    return base::lookup(key);
+  }
+
+  /// Creates a constant iterator pointing to the given key.
+  /// If this is not possible, return the end iterator. @see lookup
+  auto lookup(const key_type& key) const noexcept -> const_iterator {
+    return base::lookup(key);
+  }
+
+  /// Checks if an element has already been inserted into the map.
+  bool operator()(const key_type& key) const noexcept {
+    return base::contains(key);
+  }
+
+  /// Reserves enough memory in the underlying table by creating a new temporary
+  /// table with the given size ceiled to the next power of two, rehashing all
+  /// elements into it, and swapping its content with the actual table.
+  /// In this case, all iterators and pointers become invalid.
+  /// If the given size is smaller than the current table size, nothing happens.
+  void reserve_capacity(size_type count) { base::reserve_capacity(count); }
+
+  /// Reserves enough memory in the underlying table such that 'count' elements
+  /// could be inserted without implicitly triggering a rehash with respect to
+  /// the current maximum allowed load factor. @see reserve_capacity
+  void reserve(size_type count) { base::reserve(count); }
+
+  /// Clears all the contents of the set without changing its capacitcy.
+  void clear() { base::clear(); }
+
+  /// Statically inserts a given element into the set without reallocation and
+  /// rehashing. If a reallocation would take place, the functions throws an
+  /// exception 'std::overlow_error'. If the key has already been inserted, the
+  /// function throws an exception of type 'std::invalid_argument'.
   template <generic::forwardable<key_type> K>
   void static_insert(K&& key) {
     base::static_insert_key(std::forward<K>(key));
   }
 
+  /// Statically inserts a given element into the set without reallocation and
+  /// rehashing. If a reallocation would take place or if the key has already
+  /// been inserted, the function does nothing.
   template <generic::forwardable<key_type> K>
   void try_static_insert(K&& key) {
     base::try_static_insert_key(std::forward<K>(key));
   }
 
+  /// Inserts a given element into the set with possible reallocation and
+  /// rehashing. If the element has already been inserted, the
+  /// function throws an exception of type 'std::invalid_argument'.
   template <generic::forwardable<key_type> K>
   void insert(K&& key) {
     base::insert_key(std::forward<K>(key));
   }
 
+  /// Inserts a given element into the set with possible reallocation and
+  /// rehashing. If the key has already been inserted, nothing is done.
+  template <generic::forwardable<key_type> K>
+  void try_insert(K&& key) {
+    base::try_insert_key(std::forward<K>(key));
+  }
+
+  /// Inserts elements into the set by using the given input range.
   template <generic::input_range<key_type> T>
   void insert(const T& data) {
     reserve(std::ranges::size(data) + size());
@@ -119,36 +193,26 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
       try_static_insert(k);
   }
 
-  bool contains(const key_type& key) const noexcept {
-    return base::contains(key);
-  }
-
-  void remove(const key_type& key) { base::remove(key); }
-
-  void remove(iterator it) { base::remove(it); }
-
-  void remove(const_iterator it) { base::remove(it); }
-
-  void reserve(size_type count) { base::reserve(count); }
-
-  void reserve_capacity(size_type count) { base::reserve_capacity(count); }
-
-  auto lookup(const key_type& key) noexcept -> iterator {
-    return base::lookup(key);
-  }
-
-  auto lookup(const key_type& key) const noexcept -> const_iterator {
-    return base::lookup(key);
-  }
-
-  auto operator[](const key_type& key) -> flat_set& {
-    insert(key);
+  /// Inserts the given key into the set and returns a reference to the set
+  /// itself. This function can be chained. No exception is thrown if the given
+  /// element already exists.
+  template <generic::forwardable<key_type> K>
+  auto operator[](K&& key) -> flat_set& {
+    try_insert(std::forward<K>(key));
     return *this;
   }
 
-  bool operator()(const key_type& key) const noexcept {
-    return base::contains(key);
-  }
+  /// Removes the given element from the set. If there is no such element,
+  /// throws an exception of type 'std::invalid_argument'.
+  void remove(const key_type& key) { base::remove(key); }
+
+  /// Removes the element pointed to by the given iterator.
+  /// This functions assumes the iterator is pointing to an existing element.
+  void remove(iterator it) { base::remove(it); }
+
+  /// Removes the element pointed to by the given iterator.
+  /// This functions assumes the iterator is pointing to an existing element.
+  void remove(const_iterator it) { base::remove(it); }
 };
 
 TEMPLATE

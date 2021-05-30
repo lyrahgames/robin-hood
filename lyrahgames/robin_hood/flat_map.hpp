@@ -132,7 +132,7 @@ class flat_map
     return base::lookup(key);
   }
 
-  /// Create a constant iterator pointing to an element with the given key.
+  /// Creates a constant iterator pointing to an element with the given key.
   /// If this is not possible, return the end iterator. @see lookup
   auto lookup(const key_type& key) const noexcept -> const_iterator {
     return base::lookup(key);
@@ -235,9 +235,8 @@ class flat_map
     base::table.construct_value(index);
   }
 
-  /// Statically insert a given element into the map without reallocation and
-  /// rehashing. If a reallocation would take place or if the key has already
-  /// been inserted, the function does nothing.
+  /// Insert a given element into the map with possible reallocation and
+  /// rehashing. If the key has already been inserted, nothing is done.
   template <generic::forwardable<key_type>    K,
             generic::forwardable<mapped_type> V>
   void try_insert(K&& key, V&& value) {
@@ -246,10 +245,9 @@ class flat_map
     base::table.construct_value(index, std::forward<V>(value));
   }
 
-  /// Statically insert a given element into the map without reallocation and
-  /// rehashing. The value of the element is default constructed. If a
-  /// reallocation would take place or if the key has already been inserted, the
-  /// function does nothing.
+  /// Insert a given element into the map with possible reallocation and
+  /// rehashing. The value is default constructed. If the key has already been
+  /// inserted, nothing is done.
   template <generic::forwardable<key_type> K>
   void try_insert(K&& key)  //
       requires std::default_initializable<mapped_type> {
