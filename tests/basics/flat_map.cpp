@@ -665,3 +665,284 @@ SCENARIO("robin_hood::flat_map: unique_ptr as Value Types") {
     }
   }
 }
+
+SCENARIO("robin_hood::flat_map::static_insert: Statistics for Key Type") {
+  // State to compare the log of log_value against.
+  struct log::state state {};
+  using log_value = basic_log_value<int, unique_log>;
+
+  GIVEN(
+      "an empty map with a key type able to log its usage and a trivial "
+      "hasher") {
+    auto map = robin_hood::auto_flat_map<log_value, int>(
+        {}, [](const log_value& x) -> size_t {
+          std::scoped_lock lock{x.log.access_mutex};
+          ++x.log.state.counters[x.log.state.hash_calls];
+          return x.value;
+        });
+    map.reserve_capacity(16);
+    CAPTURE(map);
+    CAPTURE(map.data());
+
+    WHEN("statically inserting elements without collision by lvalue") {
+      const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("only the hash function and the copy constructor are called.") {
+          state.counters[state.copy_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("default statically inserting elements without collision by lvalue") {
+      const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key);
+
+        THEN("only the hash function and the copy constructor are called.") {
+          state.counters[state.copy_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("statically inserting elements without collision by rvalue") {
+      const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(std::move(key), map.size());
+
+        THEN("only the hash function and the move constructor are called.") {
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("default statically inserting elements without collision by rvalue") {
+      const auto keys = std::initializer_list<log_value>{1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(std::move(key));
+
+        THEN("only the hash function and the move constructor are called.") {
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("statically inserting elements without collision by construction") {
+      auto keys = {1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("only the hash function and the move constructor are called.") {
+          state.counters[state.construct_calls]      = 1;
+          state.counters[state.destruct_calls]       = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "default statically inserting elements without collision by "
+        "construction") {
+      auto keys = {1, 2, 7, 11, 64};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key);
+
+        THEN("only the hash function and the move constructor are called.") {
+          state.counters[state.construct_calls]      = 1;
+          state.counters[state.destruct_calls]       = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+  }
+
+  GIVEN(
+      "a map with a key type able to log its usage and a trivial hasher "
+      "containing some elements") {
+    auto map = robin_hood::auto_flat_map<log_value, int>(
+        {{1, 0}, {2, 1}, {7, 2}, {11, 3}, {64, 4}, {32, 5}},
+        [](const log_value& x) -> size_t {
+          std::scoped_lock lock{x.log.access_mutex};
+          ++x.log.state.counters[x.log.state.hash_calls];
+          return x.value;
+        });
+    map.reserve_capacity(16);
+    CAPTURE(map);
+    CAPTURE(map.data());
+
+    WHEN("statically inserting elements with one collision by lvalue") {
+      auto keys = std::initializer_list<log_value>{23, 27};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("only hash, equal and copy are called.") {
+          state.counters[state.copy_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("statically inserting elements with two collisions by lvalue") {
+      map.static_insert(23, map.size());
+      map.static_insert(27, map.size());
+      auto keys = std::initializer_list<log_value>{39, 43};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("additionally two equals are needed.") {
+          state.counters[state.copy_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 2;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN("statically inserting elements with three collisions by lvalue") {
+      map.static_insert(23, map.size());
+      map.static_insert(27, map.size());
+      map.static_insert(39, map.size());
+      map.static_insert(43, map.size());
+      auto keys = std::initializer_list<log_value>{55, 59};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("additionally three equals are needed.") {
+          state.counters[state.copy_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 3;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "statically inserting elements with one collision and one swap by "
+        "lvalue") {
+      map.static_insert(8, map.size());
+      map.static_insert(12, map.size());
+      auto keys = std::initializer_list<log_value>{23, 27};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN(
+            "additionally a temporary key is move constructed and destroyedat "
+            "the end. The swapped element is move constructed in its new"
+            "place. The given key is copied into the existing location.") {
+          state.counters[state.copy_assign_calls]    = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "statically inserting elements with one collision and two swaps by "
+        "lvalue") {
+      map.static_insert(8, map.size());
+      map.static_insert(9, map.size());
+      map.static_insert(12, map.size());
+      map.static_insert(13, map.size());
+      auto keys = std::initializer_list<log_value>{23, 27};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("additionally swap has to be called.") {
+          state.counters[state.copy_assign_calls]    = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 1;
+          state.counters[state.swap_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "statically inserting elements with two collisions and two swaps by "
+        "lvalue") {
+      auto keys = std::initializer_list<log_value>{128};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(key, map.size());
+
+        THEN("additionally equal and swap have to be called.") {
+          state.counters[state.copy_assign_calls]    = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 2;
+          state.counters[state.swap_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "statically inserting elements with two collisions and two swaps by "
+        "rvalue") {
+      auto keys = std::initializer_list<log_value>{128};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(std::move(key), map.size());
+
+        THEN("instead of a copy assignment the move assignment is called.") {
+          state.counters[state.move_assign_calls]    = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 2;
+          state.counters[state.swap_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+
+    WHEN(
+        "statically inserting elements with two collisions and two swaps by "
+        "construction") {
+      auto keys = {128};
+      for (auto key : keys) {
+        reset(log_value::log);
+        map.static_insert(std::move(key), map.size());
+
+        THEN("the log_value has to be constructed and destroyed.") {
+          state.counters[state.construct_calls]      = 1;
+          state.counters[state.move_assign_calls]    = 1;
+          state.counters[state.move_construct_calls] = 1;
+          state.counters[state.destruct_calls]       = 1;
+          state.counters[state.hash_calls]           = 1;
+          state.counters[state.equal_calls]          = 2;
+          state.counters[state.swap_calls]           = 1;
+          CHECK(log_value::log == state);
+        }
+      }
+    }
+  }
+}

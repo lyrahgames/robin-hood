@@ -162,6 +162,12 @@ inline bool operator==(const basic_log_value<T, I>& x,
   return x.value == y.value;
 }
 
+template <typename T, size_t I>
+inline std::ostream& operator<<(std::ostream&                os,
+                                const basic_log_value<T, I>& v) {
+  return os << v.value;
+}
+
 }  // namespace lyrahgames
 
 namespace std {

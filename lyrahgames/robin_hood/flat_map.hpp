@@ -44,26 +44,33 @@ class flat_map
   /// Used for statistics and logging tests.
   using base::lookup_data;
 
-  flat_map()                   = default;
-  virtual ~flat_map() noexcept = default;
+  flat_map() = default;
+  // virtual ~flat_map() noexcept = default;
 
-  flat_map(const flat_map&) = default;
-  flat_map& operator=(const flat_map&) = default;
+  // flat_map(const flat_map&) = default;
+  // flat_map& operator=(const flat_map&) = default;
 
-  flat_map(flat_map&&) noexcept = default;
-  flat_map& operator=(flat_map&&) noexcept = default;
+  // flat_map(flat_map&&) noexcept = default;
+  // flat_map& operator=(flat_map&&) noexcept = default;
 
   explicit flat_map(size_type        s,
                     const hasher&    h = {},
                     const equality&  e = {},
-                    const allocator& a = {}) {
-    reserve_capacity(s);
-    base::hash  = h;
-    base::equal = e;
-  }
+                    const allocator& a = {})
+      : base(s, h, e, a) {}
+
+  flat_map(size_type s, const allocator& a)
+      : flat_map(s, hasher{}, equality{}, a) {}
+
+  flat_map(size_type s, const hasher& h, const allocator& a)
+      : flat_map(s, h, equality{}, a) {}
 
   template <generic::pair_input_range<key_type, mapped_type> T>
-  explicit flat_map(const T& data) {
+  explicit flat_map(const T&         data,
+                    const hasher&    h = {},
+                    const equality&  e = {},
+                    const allocator& a = {})
+      : flat_map(0, h, e, a) {
     insert(data);
   }
 
@@ -106,6 +113,13 @@ class flat_map
   void static_insert(K&& key, V&& value) {
     const auto index = base::static_insert_key(std::forward<K>(key));
     base::table.construct_value(index, std::forward<V>(value));
+  }
+
+  template <generic::forwardable<key_type> K>
+  void static_insert(K&& key)  //
+      requires std::default_initializable<mapped_type> {
+    const auto index = base::static_insert_key(std::forward<K>(key));
+    base::table.construct_value(index);
   }
 
   template <generic::forwardable<key_type>    K,
@@ -204,6 +218,32 @@ class flat_map
     return const_cast<flat_map&>(*this).operator()(key);
   }
 };
+
+template <generic::key                       Key,
+          generic::value                     Value,
+          generic::hasher<Key>               Hasher    = std::hash<Key>,
+          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
+          generic::allocator                 Allocator = std::allocator<Key>>
+inline auto auto_flat_map(size_t           size,
+                          const Hasher&    hash  = {},
+                          const Equality&  equal = {},
+                          const Allocator& alloc = {}) {
+  return flat_map<Key, Value, Hasher, Equality, Allocator>(size, hash, equal,
+                                                           alloc);
+}
+
+template <generic::key                       Key,
+          generic::value                     Value,
+          generic::hasher<Key>               Hasher    = std::hash<Key>,
+          generic::equivalence_relation<Key> Equality  = std::equal_to<Key>,
+          generic::allocator                 Allocator = std::allocator<Key>>
+inline auto auto_flat_map(std::initializer_list<std::pair<Key, Value>> list,
+                          const Hasher&    hash  = {},
+                          const Equality&  equal = {},
+                          const Allocator& alloc = {}) {
+  return flat_map<Key, Value, Hasher, Equality, Allocator>(list, hash, equal,
+                                                           alloc);
+}
 
 TEMPLATE
 inline std::ostream& operator<<(std::ostream& os, const FLAT_MAP& m) {

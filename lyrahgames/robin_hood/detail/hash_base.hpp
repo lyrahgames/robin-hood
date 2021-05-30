@@ -20,6 +20,14 @@ struct hash_base {
   using iterator       = typename container::iterator;
   using const_iterator = typename container::const_iterator;
 
+  hash_base() = default;
+
+  explicit hash_base(size_type        s,
+                     const hasher&    h = {},
+                     const equality&  e = {},
+                     const allocator& a = {})
+      : table{s, a}, hash{h}, equal{e} {}
+
   auto hash_index(const key_type& key) const noexcept -> size_type {
     const auto mask = table.size - size_type{1};
     return hash(key) & mask;
