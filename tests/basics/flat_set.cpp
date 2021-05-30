@@ -95,18 +95,20 @@ SCENARIO("robin_hood::flat_set::lookup_data: Lookup Statistics for Key Type") {
     WHEN("looking up keys of already inserted elements") {
       // The creation of log_value out of integers will trigger a constructor.
       const auto keys = std::initializer_list<log_value>{1, 2, 9, 0, 8, 5};
-      for (auto key : keys) {
+      const auto psl  = {2, 1, 1, 1, 2, 1};
+      for (auto i = begin(psl); auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = set.lookup_data(key);
+        const auto [index, p, found] = set.lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
-            " hash function is called once and the number of equality "
-            "comparisons is equal to the probe sequence length of the given "
-            "element in the set.") {
+            "hash function is called once and the number of equality "
+            "comparisons is smaller or equal to the probe sequence length of "
+            "the given element in the set.") {
           CHECK(found);
           state.counters[state.hash_calls]  = 1;
-          state.counters[state.equal_calls] = psl;
+          state.counters[state.equal_calls] = *i++;
+          CHECK(state.counters[state.equal_calls] <= p);
           CHECK(log_value::log == state);
         }
       }
@@ -117,16 +119,14 @@ SCENARIO("robin_hood::flat_set::lookup_data: Lookup Statistics for Key Type") {
       const auto keys = std::initializer_list<log_value>{3, 7, 18};
       for (auto key : keys) {
         reset(log_value::log);
-        const auto [index, psl, found] = set.lookup_data(key);
+        const auto [index, p, found] = set.lookup_data(key);
 
         THEN(
             "no constructors, destructors, or assignments are called. Only the "
-            "hash function is called once and the number equality comparisons "
-            "is equal to the probe sequence length minus one of the given "
-            "element.") {
+            "hash function is called once and no comparison is done.") {
           CHECK(!found);
           state.counters[state.hash_calls]  = 1;
-          state.counters[state.equal_calls] = psl - 1;
+          state.counters[state.equal_calls] = 0;
           CHECK(log_value::log == state);
         }
       }

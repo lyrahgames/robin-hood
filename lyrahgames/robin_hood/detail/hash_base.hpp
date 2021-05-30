@@ -38,7 +38,9 @@ struct hash_base {
       -> std::tuple<size_type, psl_type, bool> {
     auto index = hash_index(key);
     auto psl   = psl_type{1};
-    for (; psl <= table.psl(index); ++psl) {
+    for (; psl < table.psl(index); ++psl)
+      index = next(index);
+    for (; psl == table.psl(index); ++psl) {
       if (equal(table.key(index), key)) return {index, psl, true};
       index = next(index);
     }
