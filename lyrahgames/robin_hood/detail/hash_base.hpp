@@ -28,20 +28,29 @@ struct hash_base {
                      allocator a = {})
       : table{s, a}, hash{h}, equal{e} {}
 
+  /// Returns the ideal hash index of the given key
+  /// if there would be no collision.
   auto hash_index(const key_type& key) const noexcept -> size_type {
     const auto mask = table.size - size_type{1};
     return hash(key) & mask;
   }
 
+  /// Advance the given index to the underlying table by one and return it.
   auto next(size_type index) const noexcept -> size_type {
     const auto mask = table.size - size_type{1};
     return (index + size_type{1}) & mask;
   }
 
+  /// Checks if the current load factor of the table has reached the maximum
+  /// possible load factor until a reallocation has to be done.
   bool overloaded() const noexcept {
     return load >= size_type(std::floor(max_load_ratio * table.size));
   }
 
+  /// If the key is contained in the table then this function returns its index,
+  /// probe sequence length, and 'true'. Otherwise, it would return the index
+  /// where it would have to be inserted with the according probe sequence
+  /// length and 'false'.
   auto lookup_data(const key_type& key) const noexcept
       -> std::tuple<size_type, psl_type, bool> {
     auto index = hash_index(key);
@@ -55,7 +64,9 @@ struct hash_base {
     return {index, psl, false};
   }
 
-  /// Assumes there is no entry with the given key inside the table.
+  /// Assumes the given key has not already been inserted and computes table
+  /// index and probe sequence length where Robin Hood swapping would have to be
+  /// started.
   auto static_insert_data(const key_type& key) const noexcept
       -> std::pair<size_type, psl_type> {
     auto index = hash_index(key);
@@ -65,7 +76,10 @@ struct hash_base {
     return {index, psl};
   }
 
-  /// Assumes the table entry with the given index is not empty.
+  /// Assumes the table entry with the given index is not empty and moves the
+  /// current and succeeding values along the chain by using Robin Hood
+  /// swapping. The first empty entry will be move constructed. After this
+  /// operation the original index can be move assigned.
   void prepare_insert(size_type index) {
     auto p = table.psl(index) + psl_type{1};
     auto i = next(index);
@@ -80,6 +94,9 @@ struct hash_base {
     table.move_construct(i, index);
   }
 
+  /// Inserts a new key in the table by using Robin Hood swapping algorithm.
+  /// Assumes that index and psl were computed by 'lookup_data'
+  /// and that capacity is big enough such that map will not be overloaded.
   template <generic::forward_reference<key_type> K>
   void basic_static_insert_key(size_type index, psl_type psl, K&& key) {
     ++load;
@@ -94,6 +111,9 @@ struct hash_base {
     table.key(index) = std::forward<K>(key);
   }
 
+  /// Directly sets the new size of the underlying table and rehashes all
+  /// inserted elements into it. The function assumes that the given size is a
+  /// positive power of two.
   void reallocate_and_rehash(size_type c) {
     container old_table{c, table.alloc};
     table.swap(old_table);
@@ -105,7 +125,10 @@ struct hash_base {
     }
   }
 
-  /// Assumes the table entry referenced by the given index is not empty.
+  /// Erase the element at the given table index and move the subsequent
+  /// elements one step back. Abort this when an element with probe sequence
+  /// length of '1' occurs. Assumes the table entry referenced by the given
+  /// index is not empty.
   void basic_remove(size_type index) {
     auto next_index = next(index);
     while (table.psl(next_index) > 1) {
@@ -119,6 +142,8 @@ struct hash_base {
     --load;
   }
 
+  /// Doubles the amount of allocated space of the underlying table and inserts
+  /// all elements again.
   void double_capacity_and_rehash() { reallocate_and_rehash(table.size << 1); }
 
   void reserve_capacity(size_type size) {
@@ -133,6 +158,8 @@ struct hash_base {
     reserve_capacity(count);
   }
 
+  /// Sets the maximum load factor and possibly triggers a reallocation.
+  /// The function assumes that the given factor lies in (0,1).
   void set_max_load_factor(real x) {
     assert((x > 0) || (x < 1));
     max_load_ratio = x;
