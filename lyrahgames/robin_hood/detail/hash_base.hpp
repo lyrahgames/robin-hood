@@ -246,6 +246,13 @@ struct hash_base {
     return index;
   }
 
+  bool try_remove(const key_type& key) {
+    const auto [index, psl, found] = lookup_data(key);
+    if (!found) return false;
+    basic_remove(index);
+    return true;
+  }
+
   void remove(const key_type& key) {
     const auto [index, psl, found] = lookup_data(key);
     if (!found)

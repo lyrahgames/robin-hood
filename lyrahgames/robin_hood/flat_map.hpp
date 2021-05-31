@@ -418,6 +418,10 @@ class flat_map
   /// 'std::invalid_argument'.
   void remove(const key_type& key) { base::remove(key); }
 
+  /// Removes an element from the map with the given key.
+  /// If there is no such element, nothing is done.
+  void try_remove(const key_type& key) { base::try_remove(key); }
+
   /// Removes the element pointed to by the given iterator.
   /// This functions assumes the iterator is pointing to an existing element.
   void remove(iterator it) { base::remove(it); }
