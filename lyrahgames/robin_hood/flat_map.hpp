@@ -215,6 +215,33 @@ class flat_map
     base::table.construct_value(index);
   }
 
+  /// Statically inserts a given element into the map without reallocation and
+  /// rehashing and without checking for overload. The function assumes that
+  /// after insertion the maximum load factor will not be exceeded. If the key
+  /// has already been inserted, the function does nothing.
+  template <generic::forwardable<key_type>    K,
+            generic::forwardable<mapped_type> V>
+  void nocheck_static_insert(K&& key, V&& value) {
+    const auto [index, done] =
+        base::nocheck_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index, std::forward<V>(value));
+  }
+
+  /// Statically insert a given element into the map without reallocation and
+  /// rehashing and without checking for overload. The function assumes that
+  /// after insertion the maximum load factor will not be exceeded. The value of
+  /// the element is default constructed. If the key has already been inserted,
+  /// the function does nothing.
+  template <generic::forwardable<key_type> K>
+  void nocheck_static_insert(K&& key)  //
+      requires std::default_initializable<mapped_type> {
+    const auto [index, done] =
+        base::nocheck_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index);
+  }
+
   /// Insert a given element into the map with possible reallocation and
   /// rehashing. If the key has already been inserted, the
   /// function throws an exception of type 'std::invalid_argument'.
@@ -263,7 +290,7 @@ class flat_map
   void insert(const T& data) {
     reserve(std::ranges::size(data) + size());
     for (const auto& [k, v] : data)
-      static_insert_or_assign(k, v);
+      nocheck_static_insert_or_assign(k, v);
   }
 
   /// Inserts range of elements into the map by providing keys and values inside
@@ -277,7 +304,7 @@ class flat_map
     reserve(ranges::size(keys) + size());
     auto v = ranges::begin(values);
     for (auto k = ranges::begin(keys); k != ranges::end(keys); ++k, ++v)
-      static_insert_or_assign(*k, *v);
+      nocheck_static_insert_or_assign(*k, *v);
   }
 
   /// Statically emplace a new element into the map by constructing its value in
@@ -289,8 +316,8 @@ class flat_map
     base::table.construct_value(index, std::forward<arguments>(args)...);
   }
 
-  /// Statically emplace a new element into the map by constructing its value in
-  /// place. This function uses perfect forwarding construction. If the given
+  /// Statically emplaces a new element into the map by constructing its value
+  /// in place. This function uses perfect forwarding construction. If the given
   /// key already exists or if the map would have to reallocate new storage, the
   /// function does nothing.
   template <generic::forwardable<key_type> K, typename... arguments>
@@ -298,6 +325,19 @@ class flat_map
       requires std::constructible_from<mapped_type, arguments...> {
     const auto [index, done] =
         base::try_static_insert_key(std::forward<K>(key));
+    if (!done) return;
+    base::table.construct_value(index, std::forward<arguments>(args)...);
+  }
+
+  /// Statically emplaces a new element into the map by constructing its value
+  /// in place. This function uses perfect forwarding construction. If the given
+  /// key already exists, the function does nothing. Furthermore, the function
+  /// assumes that after emplacement the maximum load factor is not exceeded.
+  template <generic::forwardable<key_type> K, typename... arguments>
+  void nocheck_static_emplace(K&& key, arguments&&... args)  //
+      requires std::constructible_from<mapped_type, arguments...> {
+    const auto [index, done] =
+        base::nocheck_static_insert_key(std::forward<K>(key));
     if (!done) return;
     base::table.construct_value(index, std::forward<arguments>(args)...);
   }
@@ -332,7 +372,7 @@ class flat_map
   /// Otherwise, assigns a new value to it.
   template <generic::forwardable<key_type>    K,
             generic::forwardable<mapped_type> V>
-  void static_insert_or_assign(K&& key, V&& value) {
+  void nocheck_static_insert_or_assign(K&& key, V&& value) {
     decltype(auto) k         = forward_construct<Key>(std::forward<K>(key));
     auto [index, psl, found] = base::lookup_data(k);
     if (found) {

@@ -170,6 +170,15 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
     base::try_static_insert_key(std::forward<K>(key));
   }
 
+  /// Statically inserts a given element into the set without reallocation and
+  /// rehashing and without checking for overload. The function assumes that
+  /// after insertion the maximum load factor will not be exceeded. If the key
+  /// has already been inserted, the function does nothing.
+  template <generic::forwardable<key_type> K>
+  void nocheck_static_insert(K&& key) {
+    base::nocheck_static_insert_key(std::forward<K>(key));
+  }
+
   /// Inserts a given element into the set with possible reallocation and
   /// rehashing. If the element has already been inserted, the
   /// function throws an exception of type 'std::invalid_argument'.
@@ -190,7 +199,7 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
   void insert(const T& data) {
     reserve(std::ranges::size(data) + size());
     for (const auto& k : data)
-      try_static_insert(k);
+      nocheck_static_insert(k);
   }
 
   /// Inserts the given key into the set and returns a reference to the set

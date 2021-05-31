@@ -182,16 +182,29 @@ struct hash_base {
     return index;
   }
 
+  /// Inserts a given key into table without doing reallocation or checking for
+  /// overload. The function assumes that by inserting the given key the maximum
+  /// load factor will not be exceeded. It returns the key index and a boolean
+  /// indicating if it has already been inserted (false) or was inserted at that
+  /// point (true).
   template <generic::forwardable<key_type> K>
-  auto try_static_insert_key(K&& key) -> std::pair<size_type, bool> {
-    if (overloaded()) return {0, false};
-    // This makes sure key is constructed if it is not a direct forward
-    // reference.
+  auto nocheck_static_insert_key(K&& key) -> std::pair<size_type, bool> {
+    // This makes sure key is constructed
+    // if it is not a direct forward reference.
     decltype(auto) k = forward_construct<key_type>(std::forward<K>(key));
     auto [index, psl, found] = lookup_data(k);
     if (found) return {index, false};
     basic_static_insert_key(index, psl, std::forward<decltype(k)>(k));
     return {index, true};
+  }
+
+  /// Does the same as 'nocheck_static_insert_key' but additionally checks if an
+  /// overload would occur and abort the process by returning the size of the
+  /// table and false.
+  template <generic::forwardable<key_type> K>
+  auto try_static_insert_key(K&& key) -> std::pair<size_type, bool> {
+    if (overloaded()) return {table.size, false};
+    return nocheck_static_insert_key(std::forward<K>(key));
   }
 
   template <generic::forwardable<key_type> K>

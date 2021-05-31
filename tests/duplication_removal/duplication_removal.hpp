@@ -182,7 +182,8 @@ inline auto duplication_removal(const T& data) {
   map.reserve(ranges::size(data));
   for (const auto& p : data) {
     // ++map[p];
-    map.try_static_insert(p);
+    // map.try_static_insert(p);
+    map.nocheck_static_insert(p);
   }
   for (const auto& [p, v] : map)
     result.push_back(p);
