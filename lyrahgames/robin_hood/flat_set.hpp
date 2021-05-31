@@ -49,14 +49,20 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
   /// Used for statistics and logging tests.
   using base::lookup_data;
 
-  flat_set()                   = default;
-  virtual ~flat_set() noexcept = default;
+  flat_set() = default;
 
-  flat_set(const flat_set&) = default;
-  flat_set& operator=(const flat_set&) = default;
+  flat_set(size_type s,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : base(s, m, h, e, a) {}
 
-  flat_set(flat_set&&) noexcept = default;
-  flat_set& operator=(flat_set&&) noexcept = default;
+  flat_set(size_type s, real m, allocator a)
+      : flat_set(s, m, hasher{}, equality{}, a) {}
+
+  flat_set(size_type s, real m, hasher h, allocator a)
+      : flat_set(s, m, h, equality{}, a) {}
 
   explicit flat_set(size_type s,
                     hasher    h = {},
@@ -64,16 +70,160 @@ class flat_set : private flat_set_base<Key, Hasher, Equality, Allocator> {
                     allocator a = {})
       : base(s, h, e, a) {}
 
+  flat_set(size_type s, allocator a) : flat_set(s, hasher{}, equality{}, a) {}
+
+  flat_set(size_type s, hasher h, allocator a)
+      : flat_set(s, h, equality{}, a) {}
+
   template <generic::input_range<key_type> T>
-  explicit flat_set(const T& data) : base(0) {
-    insert(data);
+  explicit flat_set(const T&  data,
+                    hasher    h = {},
+                    equality  e = {},
+                    allocator a = {})
+      : flat_set(std::ranges::size(data), h, e, a) {
+    for (const auto& k : data)
+      nocheck_static_insert(k);
   }
 
   template <generic::input_range<key_type> T>
-  explicit flat_set(const T& data, hasher h, equality e = {}, allocator a = {})
-      : flat_set(0, h, e, a) {
-    insert(data);
+  flat_set(const T& data, allocator a)
+      : flat_set(data, hasher{}, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, hasher h, allocator a)
+      : flat_set(data, h, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T&  data,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_set(std::ranges::size(data), m, h, e, a) {
+    for (const auto& k : data)
+      nocheck_static_insert(k);
   }
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, real m, allocator a)
+      : flat_set(data, m, hasher{}, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, real m, hasher h, allocator a)
+      : flat_set(data, m, h, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T&  data,
+           size_type s,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_set(std::max(std::ranges::size(data), s), m, h, e, a) {
+    for (const auto& k : data)
+      nocheck_static_insert(k);
+  }
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, size_type s, real m, allocator a)
+      : flat_set(data, s, m, hasher{}, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, size_type s, real m, hasher h, allocator a)
+      : flat_set(data, s, m, h, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T&  data,
+           size_type s,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_set(std::max(s, std::ranges::size(data)), h, e, a) {
+    for (const auto& k : data)
+      nocheck_static_insert(k);
+  }
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, size_type s, allocator a)
+      : flat_set(data, s, hasher{}, equality{}, a) {}
+
+  template <generic::input_range<key_type> T>
+  flat_set(const T& data, size_type s, hasher h, allocator a)
+      : flat_set(data, s, h, equality{}, a) {}
+
+  explicit flat_set(std::initializer_list<key_type> list,
+                    hasher                          h = {},
+                    equality                        e = {},
+                    allocator                       a = {})
+      : flat_set(std::ranges::size(list), h, e, a) {
+    for (const auto& k : list)
+      nocheck_static_insert(k);
+  }
+
+  flat_set(std::initializer_list<key_type> list, allocator a)
+      : flat_set(list, hasher{}, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list, hasher h, allocator a)
+      : flat_set(list, h, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list,
+           size_type                       s,
+           hasher                          h = {},
+           equality                        e = {},
+           allocator                       a = {})
+      : flat_set(std::max(s, std::ranges::size(list)), h, e, a) {
+    for (const auto& k : list)
+      nocheck_static_insert(k);
+  }
+
+  flat_set(std::initializer_list<key_type> list, size_type s, allocator a)
+      : flat_set(list, s, hasher{}, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list,
+           size_type                       s,
+           hasher                          h,
+           allocator                       a)
+      : flat_set(list, s, h, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list,
+           real                            m,
+           hasher                          h = {},
+           equality                        e = {},
+           allocator                       a = {})
+      : flat_set(std::ranges::size(list), m, h, e, a) {
+    for (const auto& k : list)
+      nocheck_static_insert(k);
+  }
+
+  flat_set(std::initializer_list<key_type> list, real m, allocator a)
+      : flat_set(list, m, hasher{}, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list, real m, hasher h, allocator a)
+      : flat_set(list, m, h, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list,
+           size_type                       s,
+           real                            m,
+           hasher                          h = {},
+           equality                        e = {},
+           allocator                       a = {})
+      : flat_set(std::max(s, std::ranges::size(list)), m, h, e, a) {
+    for (const auto& k : list)
+      nocheck_static_insert(k);
+  }
+
+  flat_set(std::initializer_list<key_type> list,
+           size_type                       s,
+           real                            m,
+           allocator                       a)
+      : flat_set(list, s, m, hasher{}, equality{}, a) {}
+
+  flat_set(std::initializer_list<key_type> list,
+           size_type                       s,
+           real                            m,
+           hasher                          h,
+           allocator                       a)
+      : flat_set(list, s, m, h, equality{}, a) {}
 
   /// Checks if the set contains zero elements.
   bool empty() const noexcept { return base::empty(); }

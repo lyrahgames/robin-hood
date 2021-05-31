@@ -22,11 +22,14 @@ struct hash_base {
 
   hash_base() = default;
 
-  explicit hash_base(size_type s,
-                     hasher    h = {},
-                     equality  e = {},
-                     allocator a = {})
-      : table{s, a}, hash{h}, equal{e} {}
+  hash_base(size_type s, real m, hasher h, equality e, allocator a)
+      : table{0, a}, hash{h}, equal{e}, max_load_ratio{m} {
+    assert((0 < m) && (m < 1));
+    reserve(std::max(size_type{1}, s));
+  }
+
+  hash_base(size_type s, hasher h, equality e, allocator a)
+      : hash_base(s, 0.8, h, e, a) {}
 
   /// Returns the ideal hash index of the given key
   /// if there would be no collision.

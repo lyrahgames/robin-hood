@@ -46,38 +46,190 @@ class flat_map
 
   flat_map() = default;
 
-  explicit flat_map(size_type        s,
-                    const hasher&    h = {},
-                    const equality&  e = {},
-                    const allocator& a = {})
+  flat_map(size_type s,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : base(s, m, h, e, a) {}
+
+  flat_map(size_type s, real m, allocator a)
+      : flat_map(s, m, hasher{}, equality{}, a) {}
+
+  flat_map(size_type s, real m, hasher h, allocator a)
+      : flat_map(s, m, h, equality{}, a) {}
+
+  explicit flat_map(size_type s,
+                    hasher    h = {},
+                    equality  e = {},
+                    allocator a = {})
       : base(s, h, e, a) {}
 
-  flat_map(size_type s, const allocator& a)
-      : flat_map(s, hasher{}, equality{}, a) {}
+  flat_map(size_type s, allocator a) : flat_map(s, hasher{}, equality{}, a) {}
 
-  flat_map(size_type s, const hasher& h, const allocator& a)
+  flat_map(size_type s, hasher h, allocator a)
       : flat_map(s, h, equality{}, a) {}
 
   template <generic::pair_input_range<key_type, mapped_type> T>
-  explicit flat_map(const T&         data,
-                    const hasher&    h = {},
-                    const equality&  e = {},
-                    const allocator& a = {})
-      : flat_map(0, h, e, a) {
-    insert(data);
+  explicit flat_map(const T&  data,
+                    hasher    h = {},
+                    equality  e = {},
+                    allocator a = {})
+      : flat_map(std::ranges::size(data), h, e, a) {
+    for (const auto& [k, v] : data)
+      nocheck_static_insert_or_assign(k, v);
   }
 
-  explicit flat_map(
-      std::initializer_list<std::pair<key_type, mapped_type>> list) {
-    reserve(list.size());
-    for (const auto& [k, v] : list) {
-      try {
-        static_insert(k, v);
-      } catch (std::invalid_argument&) {
-        operator()(k) = v;
-      }
-    }
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, allocator a)
+      : flat_map(data, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, hasher h, allocator a)
+      : flat_map(data, h, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T&  data,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_map(std::ranges::size(data), m, h, e, a) {
+    for (const auto& [k, v] : data)
+      nocheck_static_insert_or_assign(k, v);
   }
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, real m, allocator a)
+      : flat_map(data, m, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, real m, hasher h, allocator a)
+      : flat_map(data, m, h, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T&  data,
+           size_type s,
+           real      m,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_map(std::max(std::ranges::size(data), s), m, h, e, a) {
+    for (const auto& [k, v] : data)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, size_type s, real m, allocator a)
+      : flat_map(data, s, m, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, size_type s, real m, hasher h, allocator a)
+      : flat_map(data, s, m, h, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T&  data,
+           size_type s,
+           hasher    h = {},
+           equality  e = {},
+           allocator a = {})
+      : flat_map(std::max(s, std::ranges::size(data)), h, e, a) {
+    for (const auto& [k, v] : data)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, size_type s, allocator a)
+      : flat_map(data, s, hasher{}, equality{}, a) {}
+
+  template <generic::pair_input_range<key_type, mapped_type> T>
+  flat_map(const T& data, size_type s, hasher h, allocator a)
+      : flat_map(data, s, h, equality{}, a) {}
+
+  explicit flat_map(
+      std::initializer_list<std::pair<key_type, mapped_type>> list,
+      hasher                                                  h = {},
+      equality                                                e = {},
+      allocator                                               a = {})
+      : flat_map(std::ranges::size(list), h, e, a) {
+    for (const auto& [k, v] : list)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           allocator                                               a)
+      : flat_map(list, hasher{}, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           hasher                                                  h,
+           allocator                                               a)
+      : flat_map(list, h, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           hasher                                                  h = {},
+           equality                                                e = {},
+           allocator                                               a = {})
+      : flat_map(std::max(s, std::ranges::size(list)), h, e, a) {
+    for (const auto& [k, v] : list)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           allocator                                               a)
+      : flat_map(list, s, hasher{}, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           hasher                                                  h,
+           allocator                                               a)
+      : flat_map(list, s, h, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           real                                                    m,
+           hasher                                                  h = {},
+           equality                                                e = {},
+           allocator                                               a = {})
+      : flat_map(std::ranges::size(list), m, h, e, a) {
+    for (const auto& [k, v] : list)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           real                                                    m,
+           allocator                                               a)
+      : flat_map(list, m, hasher{}, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           real                                                    m,
+           hasher                                                  h,
+           allocator                                               a)
+      : flat_map(list, m, h, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           real                                                    m,
+           hasher                                                  h = {},
+           equality                                                e = {},
+           allocator                                               a = {})
+      : flat_map(std::max(s, std::ranges::size(list)), m, h, e, a) {
+    for (const auto& [k, v] : list)
+      nocheck_static_insert_or_assign(k, v);
+  }
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           real                                                    m,
+           allocator                                               a)
+      : flat_map(list, s, m, hasher{}, equality{}, a) {}
+
+  flat_map(std::initializer_list<std::pair<key_type, mapped_type>> list,
+           size_type                                               s,
+           real                                                    m,
+           hasher                                                  h,
+           allocator                                               a)
+      : flat_map(list, s, m, h, equality{}, a) {}
 
   /// Checks if the map contains zero elements.
   bool empty() const noexcept { return base::empty(); }
